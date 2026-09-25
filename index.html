@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chess Box</title>
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@lichess-org/chessground@10.1.1/assets/chessground.base.min.css" />
+
+  <style>
+    :root {
+      --board-light: #dee3e6;
+      --board-dark:  #4a75a0;
+      --coord-size: 11px;
+      --widget-bg: transparent;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      background: transparent !important;
+      height: 100%;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .puzzle-widget {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+      background: var(--widget-bg) !important;
+      padding: 8px;
+      border-radius: 12px;
+      transition: background 0.2s ease;
+    }
+
+    .puzzle-widget .cg-wrap {
+      width: 100% !important;
+      aspect-ratio: 1 / 1;
+      height: auto !important;
+      position: relative;
+      background: transparent !important;
+    }
+    .puzzle-widget .cg-wrap cg-board,
+    .puzzle-widget .cg-wrap .cg-board {
+      background-color: var(--board-light) !important;
+      background-image:
+        linear-gradient(45deg, var(--board-dark) 25%, transparent 25%, transparent 75%, var(--board-dark) 75%),
+        linear-gradient(45deg, var(--board-dark) 25%, transparent 25%, transparent 75%, var(--board-dark) 75%) !important;
+      background-size: 25% 25% !important;
+      background-position: 0 0, 12.5% 12.5% !important;
+      background-repeat: repeat !important;
+      touch-action: none !important;
+    }
+
+    .puzzle-widget .cg-wrap piece.pawn.white   { background-image: url('https://lichess1.org/assets/piece/horsey/wP.svg'); }
+    .puzzle-widget .cg-wrap piece.knight.white { background-image: url('https://lichess1.org/assets/piece/horsey/wN.svg'); }
+    .puzzle-widget .cg-wrap piece.bishop.white { background-image: url('https://lichess1.org/assets/piece/horsey/wB.svg'); }
+    .puzzle-widget .cg-wrap piece.rook.white   { background-image: url('https://lichess1.org/assets/piece/horsey/wR.svg'); }
+    .puzzle-widget .cg-wrap piece.queen.white  { background-image: url('https://lichess1.org/assets/piece/horsey/wQ.svg'); }
+    .puzzle-widget .cg-wrap piece.king.white   { background-image: url('https://lichess1.org/assets/piece/horsey/wK.svg'); }
+    .puzzle-widget .cg-wrap piece.pawn.black   { background-image: url('https://lichess1.org/assets/piece/horsey/bP.svg'); }
+    .puzzle-widget .cg-wrap piece.knight.black { background-image: url('https://lichess1.org/assets/piece/horsey/bN.svg'); }
+    .puzzle-widget .cg-wrap piece.bishop.black { background-image: url('https://lichess1.org/assets/piece/horsey/bB.svg'); }
+    .puzzle-widget .cg-wrap piece.rook.black   { background-image: url('https://lichess1.org/assets/piece/horsey/bR.svg'); }
+    .puzzle-widget .cg-wrap piece.queen.black  { background-image: url('https://lichess1.org/assets/piece/horsey/bQ.svg'); }
+    .puzzle-widget .cg-wrap piece.king.black   { background-image: url('https://lichess1.org/assets/piece/horsey/bK.svg'); }
+
+    .puzzle-widget .cg-wrap piece { touch-action: none !important; }
+
+    .puzzle-widget .cg-wrap coords coord,
+    .puzzle-widget .cg-wrap .coords .coord {
+      color: #f0f0f0;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 3px rgba(0, 0, 0, 0.6);
+      font-weight: 700;
+      font-size: var(--coord-size);
+    }
+
+    .puzzle-widget .cg-wrap square.selected {
+      background-color: rgba(20, 85, 30, 0.55) !important;
+    }
+    .puzzle-widget .cg-wrap square.move-dest {
+      background: radial-gradient(circle, rgba(20, 85, 30, 0.55) 22%, rgba(20, 85, 30, 0.3) 85%) !important;
+    }
+    .puzzle-widget .cg-wrap square.hint-origin {
+      box-shadow: inset 0 0 0 3px #ffd700 !important;
+    }
+
+    #puzzle-theme {
+      position: absolute;
+      top: 6px; left: 6px;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      pointer-events: none;
+      backdrop-filter: blur(4px);
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #puzzle-banner {
+      position: absolute;
+      top: 40px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      white-space: nowrap;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    }
+    #puzzle-banner.visible { display: flex; }
+    #puzzle-banner.ok    { background: rgba(34, 139, 34, 0.92); color: #fff; }
+    #puzzle-banner.error { background: rgba(178, 34, 34, 0.92); color: #fff; }
+    #puzzle-banner.info  { background: rgba(30, 60, 90, 0.92);  color: #fff; }
+    #puzzle-banner svg {
+      width: 18px; height: 18px;
+      fill: none; stroke: currentColor; stroke-width: 2.5;
+      stroke-linecap: round; stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    #turn-indicator {
+      position: absolute;
+      top: 6px; right: 6px;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      font-size: 11px; font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+    }
+    #turn-indicator.visible { display: flex; }
+    #turn-indicator img { width: 20px; height: 20px; }
+    #turn-indicator .turn-label { text-transform: uppercase; letter-spacing: 0.5px; }
+
+    #info-toast {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 50;
+      background: rgba(15, 20, 30, 0.96);
+      color: #fff;
+      padding: 14px 18px;
+      border-radius: 12px;
+      display: none;
+      align-items: flex-start;
+      gap: 14px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      min-width: 240px;
+    }
+    #info-toast.visible { display: flex; }
+    #info-toast .toast-piece { width: 44px; height: 44px; flex-shrink: 0; }
+    #info-toast .info-text {
+      display: flex; flex-direction: column;
+      gap: 5px; font-size: 12px; line-height: 1.35;
+      min-width: 0;
+    }
+    #info-toast .info-title {
+      color: #7ec8e3; font-size: 14px;
+      font-weight: 700; margin-bottom: 3px;
+    }
+    #info-toast .info-row {
+      display: flex; align-items: center; gap: 6px;
+      color: #d8d8d8; white-space: nowrap;
+    }
+    #info-toast .info-row .k {
+      color: #888; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.4px;
+      min-width: 80px;
+    }
+    #info-toast .info-row .v { color: #fff; font-weight: 600; }
+    #info-toast .info-row .v.rating { color: #ffd166; }
+
+    #puzzle-message {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 40;
+      background: rgba(20, 20, 20, 0.95);
+      color: #f0f0f0;
+      font-size: 13px;
+      padding: 14px 18px;
+      border-radius: 10px;
+      max-width: 90%;
+      display: none;
+      align-items: flex-start;
+      gap: 10px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    #puzzle-message.visible { display: flex; }
+    #puzzle-message svg {
+      width: 20px; height: 20px;
+      fill: none; stroke: currentColor; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    #puzzle-message .msg-text { display: flex; flex-direction: column; gap: 6px; line-height: 1.5; }
+    #puzzle-message .move-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    #puzzle-message .move-chip {
+      background: rgba(255, 255, 255, 0.12);
+      padding: 3px 8px; border-radius: 4px;
+      font-family: monospace; font-size: 13px;
+      font-weight: 700; color: #7ec8e3;
+    }
+    #puzzle-message .close-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none; color: #fff;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 14px; line-height: 1; padding: 0;
+      flex-shrink: 0; margin-left: 8px;
+    }
+    #puzzle-message .close-btn:hover { background: rgba(255, 255, 255, 0.4); }
+
+    .puzzle-controls {
+      display: flex; justify-content: center;
+      gap: 8px; margin-top: 10px; flex-wrap: wrap;
+    }
+    .puzzle-controls button {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 8px;
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+      backdrop-filter: blur(4px);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .puzzle-controls button:hover  { background: rgba(255, 255, 255, 0.28); }
+    .puzzle-controls button:active { transform: scale(0.94); }
+    .puzzle-controls button svg {
+      width: 22px; height: 22px;
+      fill: none; stroke: #e0e0e0; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .puzzle-selector {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .puzzle-selector label {
+      color: #ddd; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .puzzle-selector select,
+    .puzzle-selector input[type="text"] {
+      width: 100%; padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff; font-size: 13px; outline: none;
+    }
+    .puzzle-selector select option { background: #1a1a2e; color: #fff; }
+    .puzzle-selector input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .puzzle-selector .row { display: flex; gap: 8px; align-items: center; }
+    .puzzle-selector .row button {
+      flex: 0 0 auto; width: auto; height: 36px;
+      padding: 0 16px;
+      background: rgba(74, 117, 160, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px; color: #fff;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .puzzle-selector .row button:hover { background: rgba(74, 117, 160, 1); }
+
+    .puzzle-selector .hint-text {
+      color: #888; font-size: 11px;
+      line-height: 1.4; margin-top: -4px;
+    }
+
+    .preview-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .board-preview {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: 40px; height: 40px;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      flex-shrink: 0;
+    }
+    .piece-preview {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .piece-preview img { width: 32px; height: 32px; }
+
+    .custom-color-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .custom-color-row input[type="color"] {
+      width: 40px; height: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+      padding: 2px;
+    }
+    .custom-color-row input[type="text"] { flex: 1; }
+
+    .level-dropdown { position: relative; width: 100%; user-select: none; }
+    .level-dropdown .trigger {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: #fff; font-size: 13px; cursor: pointer;
+    }
+    .level-dropdown .trigger .arrow {
+      margin-left: auto;
+      width: 12px; height: 12px;
+      fill: none; stroke: #ccc; stroke-width: 2;
+      transition: transform 0.2s ease;
+    }
+    .level-dropdown.open .trigger .arrow { transform: rotate(180deg); }
+    .level-dropdown .trigger .level-name { font-weight: 600; }
+    .level-dropdown .trigger .level-range { color: #aaa; font-size: 11px; }
+    .level-dropdown .menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      z-index: 100;
+      background: rgba(20, 25, 40, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 6px;
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .level-dropdown.open .menu { display: flex; }
+    .level-dropdown .option {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #e0e0e0; font-size: 13px;
+    }
+    .level-dropdown .option:hover { background: rgba(255, 255, 255, 0.08); }
+    .level-dropdown .option.selected { background: rgba(74, 117, 160, 0.35); color: #fff; }
+    .level-dropdown .option .level-name { font-weight: 600; }
+    .level-dropdown .option .level-range { margin-left: auto; color: #9bb8d3; font-size: 11px; font-family: monospace; }
+    .level-icon { width: 22px; height: 22px; flex-shrink: 0; display: block; }
+    .level-icon rect { fill: rgba(255, 255, 255, 0.18); }
+    .level-icon rect.on { fill: #7ec8e3; }
+
+    .puzzle-widget.clean #puzzle-theme,
+    .puzzle-widget.clean #turn-indicator,
+    .puzzle-widget.clean .puzzle-controls,
+    .puzzle-widget.clean .puzzle-selector {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="puzzle-widget" id="puzzle-widget">
+    <span id="puzzle-theme">Loading…</span>
+    <div id="board" class="cg-wrap"></div>
+    <div id="turn-indicator">
+      <img id="turn-piece" src="" alt="King" />
+      <span class="turn-label" id="turn-text">Your turn</span>
+    </div>
+    <div id="puzzle-banner"></div>
+    <div id="info-toast"></div>
+    <div id="puzzle-message"></div>
+
+    <div class="puzzle-controls">
+      <button id="btn-hint" data-i18n-title="hint">
+        <svg viewBox="0 0 24 24">
+          <path d="M9 18h6" /><path d="M10 22h4" />
+          <path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
+        </svg>
+      </button>
+      <button id="btn-solution" data-i18n-title="solution">
+        <svg viewBox="0 0 24 24">
+          <circle cx="7.5" cy="15.5" r="4.5" />
+          <path d="M10.5 12.5 21 2" /><path d="M18 5l3 3" /><path d="M15 8l3 3" />
+        </svg>
+      </button>
+      <button id="btn-reset" data-i18n-title="reset">
+        <svg viewBox="0 0 24 24">
+          <polyline points="1 4 1 10 7 10" />
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+        </svg>
+      </button>
+      <button id="btn-next" data-i18n-title="next">
+        <svg viewBox="0 0 24 24">
+          <polyline points="9 18 15 12 9 6" />
+          <line x1="21" y1="6" x2="21" y2="18" />
+        </svg>
+      </button>
+      <button id="btn-lupa" data-i18n-title="info">
+        <svg viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="7" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="puzzle-selector" id="puzzle-selector">
+      <label data-i18n="language">Language</label>
+      <select id="sel-language">
+        <option value="en">English</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+        <option value="de">Deutsch</option>
+        <option value="pt">Português</option>
+        <option value="it">Italiano</option>
+        <option value="ru">Русский</option>
+        <option value="zh">中文</option>
+      </select>
+
+      <label data-i18n="theme">Puzzle theme</label>
+      <select id="sel-theme">
+        <option value="" data-i18n="theme_any">Any (daily)</option>
+        <option value="mateIn1">Mate in 1</option>
+        <option value="mateIn2">Mate in 2</option>
+        <option value="mateIn3">Mate in 3</option>
+        <option value="fork">Fork</option>
+        <option value="pin">Pin</option>
+        <option value="skewer">Skewer</option>
+        <option value="discoveredAttack">Discovered attack</option>
+        <option value="sacrifice">Sacrifice</option>
+        <option value="hangingPiece">Hanging piece</option>
+        <option value="trappedPiece">Trapped piece</option>
+        <option value="backRankMate">Back rank mate</option>
+        <option value="smotheredMate">Smothered mate</option>
+        <option value="endgame">Endgame</option>
+        <option value="middlegame">Middlegame</option>
+        <option value="opening">Opening</option>
+        <option value="advantage">Advantage</option>
+        <option value="crushing">Crushing</option>
+        <option value="equality">Equality</option>
+      </select>
+
+      <label data-i18n="level">Level</label>
+      <div class="level-dropdown" id="level-dropdown">
+        <div class="trigger" id="level-trigger">
+          <span id="level-trigger-icon"></span>
+          <span class="level-name" id="level-trigger-name">Any level</span>
+          <span class="level-range" id="level-trigger-range">all ELOs</span>
+          <svg class="arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="menu" id="level-menu"></div>
+      </div>
+
+      <label data-i18n="rating">Your rating (optional, overrides level)</label>
+      <input id="inp-rating" type="text" inputmode="numeric" placeholder="e.g. 1500 or 15" />
+      <p class="hint-text" data-i18n="rating_hint">If set, the API adjusts difficulty around 1500 (±300 or ±600). Leave empty to use the level above.</p>
+
+      <label data-i18n="search">Search theme (free text)</label>
+      <div class="row">
+        <input id="inp-search" type="text" placeholder="fork, pin, mate..." />
+        <button id="btn-search" data-i18n="search_btn">Search</button>
+      </div>
+
+      <label data-i18n="board_color">Board color</label>
+      <div class="preview-row">
+        <div class="board-preview" id="board-preview"></div>
+        <select id="sel-board-color" style="flex:1;">
+          <option value="blue">Blue (Lichess)</option>
+          <option value="green">Green</option>
+          <option value="brown">Brown</option>
+          <option value="gray">Gray</option>
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="wood">Wood</option>
+          <option value="marble">Marble</option>
+          <option value="purple">Purple</option>
+          <option value="custom" data-i18n="custom">Custom...</option>
+        </select>
+      </div>
+      <div id="custom-colors" class="custom-color-row" style="display:none;">
+        <input type="color" id="inp-custom-light" value="#dee3e6" />
+        <input type="text" id="inp-custom-light-hex" placeholder="#dee3e6" maxlength="7" />
+        <input type="color" id="inp-custom-dark" value="#4a75a0" />
+        <input type="text" id="inp-custom-dark-hex" placeholder="#4a75a0" maxlength="7" />
+      </div>
+
+      <label data-i18n="piece_set">Piece set</label>
+      <div class="preview-row">
+        <div class="piece-preview">
+          <img id="piece-preview-img" src="https://lichess1.org/assets/piece/horsey/wN.svg" alt="Knight" />
+        </div>
+        <select id="sel-piece-set" style="flex:1;">
+          <option value="horsey" selected>Horsey</option>
+          <option value="cburnett">Cburnett</option>
+          <option value="merida">Merida</option>
+          <option value="alpha">Alpha</option>
+          <option value="chessnut">Chessnut</option>
+          <option value="fantasy">Fantasy</option>
+          <option value="spatial">Spatial</option>
+          <option value="staunty">Staunty</option>
+          <option value="pirouetti">Pirouetti</option>
+          <option value="chess7">Chess7</option>
+          <option value="reillycraig">Reillycraig</option>
+          <option value="companion">Companion</option>
+          <option value="riohacha">Riohacha</option>
+          <option value="kosal">Kosal</option>
+          <option value="leipzig">Leipzig</option>
+          <option value="celtic">Celtic</option>
+        </select>
+      </div>
+
+      <label data-i18n="widget_bg">Widget background</label>
+      <div class="row">
+        <select id="sel-widget-bg" style="flex:1;">
+          <option value="transparent" data-i18n="bg_transparent">Transparent</option>
+          <option value="black" data-i18n="bg_black">Black</option>
+          <option value="white" data-i18n="bg_white">White</option>
+          <option value="custom" data-i18n="custom">Custom...</option>
+        </select>
+        <input type="color" id="inp-bg-color" value="#1a1a2e" style="width:40px;height:32px;border:1px solid rgba(255,255,255,0.2);border-radius:6px;background:transparent;cursor:pointer;padding:2px;" />
+      </div>
+
+      <label data-i18n="orientation">Board orientation</label>
+      <select id="sel-orientation">
+        <option value="auto" data-i18n="orient_auto">Auto (based on my color)</option>
+        <option value="white" data-i18n="orient_white">White at bottom</option>
+        <option value="black" data-i18n="orient_black">Black at bottom</option>
+      </select>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Chessground } from 'https://esm.sh/@lichess-org/chessground@10.1.1';
+    import { Chess }       from 'https://esm.sh/chess.js@1.4.0';
+
+    const $ = (id) => document.getElementById(id);
+
+    let cg           = null;
+    let game         = null;
+    let solution     = [];
+    let moveIndex    = 0;
+    let userColor    = 'white';
+    let currentTheme = '';
+    let puzzlePgn    = '';
+    let boardOrientation = 'auto';
+    let currentBoardColor = 'blue';
+    let selectedLevel = '';
+    let currentPieceSet = 'horsey';
+    let currentLang = 'en';
+
+    let puzzleRating = null;
+    let puzzlePerf   = '';
+    let puzzleClock  = '';
+    let puzzleRated  = false;
+
+    /* ================================================================
+       TRADUCCIONES (8 idiomas)
+       ================================================================ */
+    const TRANSLATIONS = {
+      en: {
+        hint: 'Hint', solution: 'Solution', reset: 'Reset', next: 'Next', info: 'Info / Clean mode',
+        language: 'Language', theme: 'Puzzle theme', theme_any: 'Any (daily)',
+        level: 'Level', rating: 'Your rating (optional, overrides level)',
+        rating_hint: 'If set, the API adjusts difficulty around 1500 (±300 or ±600). Leave empty to use the level above.',
+        search: 'Search theme (free text)', search_btn: 'Search',
+        board_color: 'Board color', custom: 'Custom...',
+        piece_set: 'Piece set', widget_bg: 'Widget background',
+        bg_transparent: 'Transparent', bg_black: 'Black', bg_white: 'White',
+        orientation: 'Board orientation', orient_auto: 'Auto (based on my color)',
+        orient_white: 'White at bottom', orient_black: 'Black at bottom',
+        loading: 'Loading…', loading_puzzle: 'Loading puzzle…', puzzle_loaded: 'Puzzle loaded: ',
+        could_not_load: 'Could not load puzzle: ',
+        your_turn: 'Your turn – ', you_play: 'You play as ', white: 'White', black: 'Black',
+        correct: 'Correct! ', incorrect: 'Incorrect. ', is_not_solution: ' is not the solution.',
+        no_more_hints: 'No more hints', puzzle_solved: 'Puzzle solved!', already_solved: 'Already solved!',
+        puzzle_reset: 'Puzzle reset', panel_shown: 'Panel shown',
+        move_from: 'Move from ', illegal: 'Illegal move',
+        no_piece: 'No piece on that square', not_your_turn: 'Not your turn',
+        you_in_check: 'You are in check, must resolve it',
+        cannot_capture_own: 'Cannot capture your own piece',
+        cannot_move_there: 'That piece cannot move there',
+        rating_label: 'Rating', game_type: 'Game type', time_label: 'Time',
+        theme_label: 'Theme', board_label: 'Board', orient_label: 'Orientation',
+        solution_title: 'Solution (', moves: ' moves):', already_solved_btn: 'Already solved!',
+        no_more_hints_btn: 'No more hints'
+      },
+      es: {
+        hint: 'Pista', solution: 'Solución', reset: 'Reiniciar', next: 'Siguiente', info: 'Info / Modo limpio',
+        language: 'Idioma', theme: 'Tema del puzzle', theme_any: 'Cualquiera (diario)',
+        level: 'Nivel', rating: 'Tu rating (opcional, sustituye al nivel)',
+        rating_hint: 'Si lo pones, la API ajusta la dificultad alrededor de 1500 (±300 o ±600). Déjalo vacío para usar el nivel de arriba.',
+        search: 'Buscar tema (texto libre)', search_btn: 'Buscar',
+        board_color: 'Color del tablero', custom: 'Personalizado...',
+        piece_set: 'Conjunto de piezas', widget_bg: 'Fondo del widget',
+        bg_transparent: 'Transparente', bg_black: 'Negro', bg_white: 'Blanco',
+        orientation: 'Orientación del tablero', orient_auto: 'Auto (según mi color)',
+        orient_white: 'Blancas abajo', orient_black: 'Negras abajo',
+        loading: 'Cargando…', loading_puzzle: 'Cargando puzzle…', puzzle_loaded: 'Puzzle cargado: ',
+        could_not_load: 'No se pudo cargar el puzzle: ',
+        your_turn: 'Tu turno – ', you_play: 'Juegas con ', white: 'Blancas', black: 'Negras',
+        correct: '¡Correcto! ', incorrect: 'Incorrecto. ', is_not_solution: ' no es la solución.',
+        no_more_hints: 'No hay más pistas', puzzle_solved: '¡Puzzle resuelto!', already_solved: '¡Ya resuelto!',
+        puzzle_reset: 'Puzzle reiniciado', panel_shown: 'Panel mostrado',
+        move_from: 'Mueve desde ', illegal: 'Movimiento ilegal',
+        no_piece: 'No hay pieza en esa casilla', not_your_turn: 'No es tu turno',
+        you_in_check: 'Estás en jaque, debes resolverlo',
+        cannot_capture_own: 'No puedes capturar tu propia pieza',
+        cannot_move_there: 'Esa pieza no puede moverse ahí',
+        rating_label: 'Rating', game_type: 'Tipo de partida', time_label: 'Tiempo',
+        theme_label: 'Tema', board_label: 'Tablero', orient_label: 'Orientación',
+        solution_title: 'Solución (', moves: ' movimientos):', already_solved_btn: '¡Ya resuelto!',
+        no_more_hints_btn: 'No hay más pistas'
+      },
+      fr: {
+        hint: 'Indice', solution: 'Solution', reset: 'Réinitialiser', next: 'Suivant', info: 'Info / Mode propre',
+        language: 'Langue', theme: 'Thème du puzzle', theme_any: 'N\'importe (quotidien)',
+        level: 'Niveau', rating: 'Votre classement (optionnel, remplace le niveau)',
+        rating_hint: 'Si défini, l\'API ajuste la difficulté autour de 1500 (±300 ou ±600). Laissez vide pour utiliser le niveau ci-dessus.',
+        search: 'Rechercher un thème (texte libre)', search_btn: 'Rechercher',
+        board_color: 'Couleur de l\'échiquier', custom: 'Personnalisé...',
+        piece_set: 'Jeu de pièces', widget_bg: 'Fond du widget',
+        bg_transparent: 'Transparent', bg_black: 'Noir', bg_white: 'Blanc',
+        orientation: 'Orientation de l\'échiquier', orient_auto: 'Auto (selon ma couleur)',
+        orient_white: 'Blancs en bas', orient_black: 'Noirs en bas',
+        loading: 'Chargement…', loading_puzzle: 'Chargement du puzzle…', puzzle_loaded: 'Puzzle chargé : ',
+        could_not_load: 'Impossible de charger le puzzle : ',
+        your_turn: 'À vous de jouer – ', you_play: 'Vous jouez les ', white: 'Blancs', black: 'Noirs',
+        correct: 'Correct ! ', incorrect: 'Incorrect. ', is_not_solution: ' n\'est pas la solution.',
+        no_more_hints: 'Plus d\'indices', puzzle_solved: 'Puzzle résolu !', already_solved: 'Déjà résolu !',
+        puzzle_reset: 'Puzzle réinitialisé', panel_shown: 'Panneau affiché',
+        move_from: 'Jouez depuis ', illegal: 'Coup illégal',
+        no_piece: 'Pas de pièce sur cette case', not_your_turn: 'Pas votre tour',
+        you_in_check: 'Vous êtes en échec, devez le résoudre',
+        cannot_capture_own: 'Vous ne pouvez pas capturer votre propre pièce',
+        cannot_move_there: 'Cette pièce ne peut pas aller là',
+        rating_label: 'Classement', game_type: 'Type de partie', time_label: 'Temps',
+        theme_label: 'Thème', board_label: 'Échiquier', orient_label: 'Orientation',
+        solution_title: 'Solution (', moves: ' coups):', already_solved_btn: 'Déjà résolu !',
+        no_more_hints_btn: 'Plus d\'indices'
+      },
+      de: {
+        hint: 'Hinweis', solution: 'Lösung', reset: 'Zurücksetzen', next: 'Weiter', info: 'Info / Clean-Modus',
+        language: 'Sprache', theme: 'Puzzle-Thema', theme_any: 'Beliebig (täglich)',
+        level: 'Stufe', rating: 'Deine Wertung (optional, überschreibt Stufe)',
+        rating_hint: 'Falls gesetzt, passt die API die Schwierigkeit um 1500 an (±300 oder ±600). Leer lassen, um die Stufe oben zu nutzen.',
+        search: 'Thema suchen (Freitext)', search_btn: 'Suchen',
+        board_color: 'Brettfarbe', custom: 'Benutzerdefiniert...',
+        piece_set: 'Figurensatz', widget_bg: 'Widget-Hintergrund',
+        bg_transparent: 'Transparent', bg_black: 'Schwarz', bg_white: 'Weiß',
+        orientation: 'Brettausrichtung', orient_auto: 'Auto (nach meiner Farbe)',
+        orient_white: 'Weiß unten', orient_black: 'Schwarz unten',
+        loading: 'Lädt…', loading_puzzle: 'Puzzle lädt…', puzzle_loaded: 'Puzzle geladen: ',
+        could_not_load: 'Puzzle konnte nicht geladen werden: ',
+        your_turn: 'Dein Zug – ', you_play: 'Du spielst ', white: 'Weiß', black: 'Schwarz',
+        correct: 'Richtig! ', incorrect: 'Falsch. ', is_not_solution: ' ist nicht die Lösung.',
+        no_more_hints: 'Keine weiteren Hinweise', puzzle_solved: 'Puzzle gelöst!', already_solved: 'Bereits gelöst!',
+        puzzle_reset: 'Puzzle zurückgesetzt', panel_shown: 'Panel angezeigt',
+        move_from: 'Ziehe von ', illegal: 'Ungültiger Zug',
+        no_piece: 'Keine Figur auf diesem Feld', not_your_turn: 'Nicht dein Zug',
+        you_in_check: 'Du bist im Schach, musst es auflösen',
+        cannot_capture_own: 'Du kannst deine eigene Figur nicht schlagen',
+        cannot_move_there: 'Diese Figur kann nicht dorthin ziehen',
+        rating_label: 'Wertung', game_type: 'Spieltyp', time_label: 'Zeit',
+        theme_label: 'Thema', board_label: 'Brett', orient_label: 'Ausrichtung',
+        solution_title: 'Lösung (', moves: ' Züge):', already_solved_btn: 'Bereits gelöst!',
+        no_more_hints_btn: 'Keine weiteren Hinweise'
+      },
+      pt: {
+        hint: 'Dica', solution: 'Solução', reset: 'Reiniciar', next: 'Próximo', info: 'Info / Modo limpo',
+        language: 'Idioma', theme: 'Tema do puzzle', theme_any: 'Qualquer (diário)',
+        level: 'Nível', rating: 'Seu rating (opcional, substitui o nível)',
+        rating_hint: 'Se definido, a API ajusta a dificuldade em torno de 1500 (±300 ou ±600). Deixe vazio para usar o nível acima.',
+        search: 'Buscar tema (texto livre)', search_btn: 'Buscar',
+        board_color: 'Cor do tabuleiro', custom: 'Personalizado...',
+        piece_set: 'Conjunto de peças', widget_bg: 'Fundo do widget',
+        bg_transparent: 'Transparente', bg_black: 'Preto', bg_white: 'Branco',
+        orientation: 'Orientação do tabuleiro', orient_auto: 'Auto (baseado na minha cor)',
+        orient_white: 'Brancas embaixo', orient_black: 'Pretas embaixo',
+        loading: 'Carregando…', loading_puzzle: 'Carregando puzzle…', puzzle_loaded: 'Puzzle carregado: ',
+        could_not_load: 'Não foi possível carregar o puzzle: ',
+        your_turn: 'Sua vez – ', you_play: 'Você joga de ', white: 'Brancas', black: 'Pretas',
+        correct: 'Correto! ', incorrect: 'Incorreto. ', is_not_solution: ' não é a solução.',
+        no_more_hints: 'Sem mais dicas', puzzle_solved: 'Puzzle resolvido!', already_solved: 'Já resolvido!',
+        puzzle_reset: 'Puzzle reiniciado', panel_shown: 'Painel exibido',
+        move_from: 'Mova de ', illegal: 'Movimento ilegal',
+        no_piece: 'Nenhuma peça nessa casa', not_your_turn: 'Não é sua vez',
+        you_in_check: 'Você está em xeque, deve resolver',
+        cannot_capture_own: 'Não pode capturar sua própria peça',
+        cannot_move_there: 'Essa peça não pode ir para lá',
+        rating_label: 'Rating', game_type: 'Tipo de jogo', time_label: 'Tempo',
+        theme_label: 'Tema', board_label: 'Tabuleiro', orient_label: 'Orientação',
+        solution_title: 'Solução (', moves: ' movimentos):', already_solved_btn: 'Já resolvido!',
+        no_more_hints_btn: 'Sem mais dicas'
+      },
+      it: {
+        hint: 'Suggerimento', solution: 'Soluzione', reset: 'Reimposta', next: 'Avanti', info: 'Info / Modalità pulita',
+        language: 'Lingua', theme: 'Tema del puzzle', theme_any: 'Qualsiasi (giornaliero)',
+        level: 'Livello', rating: 'Il tuo rating (opzionale, sovrascrive il livello)',
+        rating_hint: 'Se impostato, l\'API regola la difficoltà intorno a 1500 (±300 o ±600). Lascia vuoto per usare il livello sopra.',
+        search: 'Cerca tema (testo libero)', search_btn: 'Cerca',
+        board_color: 'Colore scacchiera', custom: 'Personalizzato...',
+        piece_set: 'Set di pezzi', widget_bg: 'Sfondo del widget',
+        bg_transparent: 'Trasparente', bg_black: 'Nero', bg_white: 'Bianco',
+        orientation: 'Orientamento scacchiera', orient_auto: 'Auto (in base al mio colore)',
+        orient_white: 'Bianchi in basso', orient_black: 'Neri in basso',
+        loading: 'Caricamento…', loading_puzzle: 'Caricamento puzzle…', puzzle_loaded: 'Puzzle caricato: ',
+        could_not_load: 'Impossibile caricare il puzzle: ',
+        your_turn: 'Tocca a te – ', you_play: 'Giochi con il ', white: 'Bianco', black: 'Nero',
+        correct: 'Corretto! ', incorrect: 'Errato. ', is_not_solution: ' non è la soluzione.',
+        no_more_hints: 'Nessun altro suggerimento', puzzle_solved: 'Puzzle risolto!', already_solved: 'Già risolto!',
+        puzzle_reset: 'Puzzle reimpostato', panel_shown: 'Pannello mostrato',
+        move_from: 'Muovi da ', illegal: 'Mossa illegale',
+        no_piece: 'Nessun pezzo su quella casella', not_your_turn: 'Non è il tuo turno',
+        you_in_check: 'Sei sotto scacco, devi risolverlo',
+        cannot_capture_own: 'Non puoi catturare il tuo stesso pezzo',
+        cannot_move_there: 'Quel pezzo non può andare lì',
+        rating_label: 'Rating', game_type: 'Tipo di partita', time_label: 'Tempo',
+        theme_label: 'Tema', board_label: 'Scacchiera', orient_label: 'Orientamento',
+        solution_title: 'Soluzione (', moves: ' mosse):', already_solved_btn: 'Già risolto!',
+        no_more_hints_btn: 'Nessun altro suggerimento'
+      },
+      ru: {
+        hint: 'Подсказка', solution: 'Решение', reset: 'Сброс', next: 'Далее', info: 'Инфо / Чистый режим',
+        language: 'Язык', theme: 'Тема задачи', theme_any: 'Любая (ежедневная)',
+        level: 'Уровень', rating: 'Ваш рейтинг (опционально, заменяет уровень)',
+        rating_hint: 'Если задан, API подбирает сложность около 1500 (±300 или ±600). Оставьте пустым, чтобы использовать уровень выше.',
+        search: 'Поиск темы (свободный текст)', search_btn: 'Искать',
+        board_color: 'Цвет доски', custom: 'Свой...',
+        piece_set: 'Набор фигур', widget_bg: 'Фон виджета',
+        bg_transparent: 'Прозрачный', bg_black: 'Чёрный', bg_white: 'Белый',
+        orientation: 'Ориентация доски', orient_auto: 'Авто (по вашему цвету)',
+        orient_white: 'Белые снизу', orient_black: 'Чёрные снизу',
+        loading: 'Загрузка…', loading_puzzle: 'Загрузка задачи…', puzzle_loaded: 'Задача загружена: ',
+        could_not_load: 'Не удалось загрузить задачу: ',
+        your_turn: 'Ваш ход – ', you_play: 'Вы играете ', white: 'белыми', black: 'чёрными',
+        correct: 'Верно! ', incorrect: 'Неверно. ', is_not_solution: ' — не решение.',
+        no_more_hints: 'Больше нет подсказок', puzzle_solved: 'Задача решена!', already_solved: 'Уже решено!',
+        puzzle_reset: 'Задача сброшена', panel_shown: 'Панель показана',
+        move_from: 'Ход с ', illegal: 'Незаконный ход',
+        no_piece: 'На этой клетке нет фигуры', not_your_turn: 'Не ваш ход',
+        you_in_check: 'Вы под шахом, нужно его устранить',
+        cannot_capture_own: 'Нельзя взять свою фигуру',
+        cannot_move_there: 'Эта фигура не может пойти туда',
+        rating_label: 'Рейтинг', game_type: 'Тип партии', time_label: 'Время',
+        theme_label: 'Тема', board_label: 'Доска', orient_label: 'Ориентация',
+        solution_title: 'Решение (', moves: ' ходов):', already_solved_btn: 'Уже решено!',
+        no_more_hints_btn: 'Больше нет подсказок'
+      },
+      zh: {
+        hint: '提示', solution: '解答', reset: '重置', next: '下一个', info: '信息 / 简洁模式',
+        language: '语言', theme: '谜题主题', theme_any: '任意（每日）',
+        level: '等级', rating: '你的等级分（可选，覆盖等级）',
+        rating_hint: '如设置，API 将难度调整到 1500 左右（±300 或 ±600）。留空则使用上面的等级。',
+        search: '搜索主题（自由文本）', search_btn: '搜索',
+        board_color: '棋盘颜色', custom: '自定义...',
+        piece_set: '棋子样式', widget_bg: '小部件背景',
+        bg_transparent: '透明', bg_black: '黑色', bg_white: '白色',
+        orientation: '棋盘方向', orient_auto: '自动（根据你的颜色）',
+        orient_white: '白方在下方', orient_black: '黑方在下方',
+        loading: '加载中…', loading_puzzle: '正在加载谜题…', puzzle_loaded: '谜题已加载： ',
+        could_not_load: '无法加载谜题： ',
+        your_turn: '轮到你 – ', you_play: '你执 ', white: '白方', black: '黑方',
+        correct: '正确！', incorrect: '错误。', is_not_solution: ' 不是正确答案。',
+        no_more_hints: '没有更多提示', puzzle_solved: '谜题已解决！', already_solved: '已经解决了！',
+        puzzle_reset: '谜题已重置', panel_shown: '面板已显示',
+        move_from: '从 ', illegal: '非法走法',
+        no_piece: '该格没有棋子', not_your_turn: '还没轮到你',
+        you_in_check: '你被将军，必须先解围',
+        cannot_capture_own: '不能吃自己的棋子',
+        cannot_move_there: '该棋子不能走到那里',
+        rating_label: '等级分', game_type: '对局类型', time_label: '时间',
+        theme_label: '主题', board_label: '棋盘', orient_label: '方向',
+        solution_title: '解答（', moves: ' 步）：', already_solved_btn: '已经解决了！',
+        no_more_hints_btn: '没有更多提示'
+      }
+    };
+
+    function t(key) {
+      const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
+      return dict[key] || TRANSLATIONS.en[key] || key;
+    }
+
+    function applyTranslations() {
+      /* Todos los elementos con data-i18n */
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const val = t(key);
+        if (val !== undefined) el.textContent = val;
+      });
+      /* Títulos de botones */
+      document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const key = el.getAttribute('data-i18n-title');
+        el.title = t(key);
+      });
+      /* Placeholders */
+      $('inp-search').placeholder = t('search') + '...';
+      /* Reconstruir el menú de niveles con las traducciones */
+      buildLevelMenu();
+      /* Actualizar textos dinámicos si ya hay partida */
+      if (game) {
+        updateTurnIndicator();
+      }
+    }
+
+    /* ================================================================
+       CONJUNTOS DE PIEZAS
+       ================================================================ */
+    const PIECE_SETS = {
+      horsey:      'https://lichess1.org/assets/piece/horsey/',
+      cburnett:    'https://lichess1.org/assets/piece/cburnett/',
+      merida:      'https://lichess1.org/assets/piece/merida/',
+      alpha:       'https://lichess1.org/assets/piece/alpha/',
+      chessnut:    'https://lichess1.org/assets/piece/chessnut/',
+      fantasy:     'https://lichess1.org/assets/piece/fantasy/',
+      spatial:     'https://lichess1.org/assets/piece/spatial/',
+      staunty:     'https://lichess1.org/assets/piece/staunty/',
+      pirouetti:   'https://lichess1.org/assets/piece/pirouetti/',
+      chess7:      'https://lichess1.org/assets/piece/chess7/',
+      reillycraig: 'https://lichess1.org/assets/piece/reillycraig/',
+      companion:   'https://lichess1.org/assets/piece/companion/',
+      riohacha:    'https://lichess1.org/assets/piece/riohacha/',
+      kosal:       'https://lichess1.org/assets/piece/kosal/',
+      leipzig:     'https://lichess1.org/assets/piece/leipzig/',
+      celtic:      'https://lichess1.org/assets/piece/celtic/'
+    };
+
+    const BOARD_THEMES = {
+      blue:   { light: '#dee3e6', dark: '#4a75a0', label: 'Blue (Lichess)' },
+      green:  { light: '#eeeed2', dark: '#769656', label: 'Green' },
+      brown:  { light: '#f0d9b5', dark: '#b58863', label: 'Brown' },
+      gray:   { light: '#f0f0f0', dark: '#808080', label: 'Gray' },
+      dark:   { light: '#7a8a9a', dark: '#2c3e50', label: 'Dark' },
+      light:  { light: '#fafafa', dark: '#c0c0c0', label: 'Light' },
+      wood:   { light: '#e8c99b', dark: '#8b5a2b', label: 'Wood' },
+      marble: { light: '#e8e8e8', dark: '#5a5a5a', label: 'Marble' },
+      purple: { light: '#e8d5f0', dark: '#6a4c93', label: 'Purple' }
+    };
+
+    /* ================================================================
+       PARÁMETROS URL
+       ================================================================ */
+    function getUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        board:       params.get('board')       || null,
+        pieces:      params.get('pieces')      || null,
+        difficulty:  params.get('difficulty')  || null,
+        font:        params.get('font')        || null,
+        bg:          params.get('bg')          || null,
+        customlight: params.get('customlight') || null,
+        customdark:  params.get('customdark')  || null,
+        lang:        params.get('lang')        || null
+      };
+    }
+
+    function isValidHex(str) {
+      return /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(str);
+    }
+    function normalizeHex(str) {
+      if (!str) return null;
+      let s = str.replace('#', '');
+      if (s.length === 3) s = s.split('').map(c => c + c).join('');
+      return '#' + s;
+    }
+
+    function applyUrlParams() {
+      const p = getUrlParams();
+
+      /* Idioma primero, para que las traducciones ya estén aplicadas */
+      if (p.lang && TRANSLATIONS[p.lang]) {
+        currentLang = p.lang;
+        $('sel-language').value = p.lang;
+        document.documentElement.lang = p.lang;
+      }
+
+      if (p.board) {
+        if (p.board === 'custom' && p.customlight && p.customdark) {
+          const light = normalizeHex(p.customlight);
+          const dark  = normalizeHex(p.customdark);
+          if (light && dark) {
+            document.documentElement.style.setProperty('--board-light', light);
+            document.documentElement.style.setProperty('--board-dark',  dark);
+            currentBoardColor = 'custom';
+            $('sel-board-color').value = 'custom';
+            $('custom-colors').style.display = 'flex';
+            $('inp-custom-light').value = light;
+            $('inp-custom-light-hex').value = light;
+            $('inp-custom-dark').value = dark;
+            $('inp-custom-dark-hex').value = dark;
+            updateBoardPreview();
+          }
+        } else if (BOARD_THEMES[p.board]) {
+          applyBoardTheme(p.board);
+          $('sel-board-color').value = p.board;
+        }
+      }
+
+      if (p.pieces && PIECE_SETS[p.pieces]) {
+        applyPieceSet(p.pieces);
+        $('sel-piece-set').value = p.pieces;
+        updatePiecePreview(p.pieces);
+      }
+
+      if (p.difficulty) {
+        const lvl = LEVELS.find(l => l.id === p.difficulty);
+        if (lvl) {
+          selectedLevel = lvl.id;
+          $('level-trigger-icon').innerHTML  = levelIconSvg(lvl.bars);
+          $('level-trigger-name').textContent = lvl.name;
+          $('level-trigger-range').textContent = '(' + lvl.note + ') ' + lvl.range;
+        }
+      }
+
+      if (p.font) {
+        const sizes = { small: '9px', normal: '11px', large: '14px' };
+        if (sizes[p.font]) {
+          document.documentElement.style.setProperty('--coord-size', sizes[p.font]);
+        }
+      }
+
+      if (p.bg) {
+        if (p.bg === 'transparent') {
+          document.documentElement.style.setProperty('--widget-bg', 'transparent');
+          $('sel-widget-bg').value = 'transparent';
+        } else if (p.bg === 'black') {
+          document.documentElement.style.setProperty('--widget-bg', '#000000');
+          $('sel-widget-bg').value = 'black';
+        } else if (p.bg === 'white') {
+          document.documentElement.style.setProperty('--widget-bg', '#ffffff');
+          $('sel-widget-bg').value = 'white';
+        } else if (isValidHex(p.bg)) {
+          const hex = normalizeHex(p.bg);
+          document.documentElement.style.setProperty('--widget-bg', hex);
+          $('sel-widget-bg').value = 'custom';
+          $('inp-bg-color').value = hex;
+        }
+      }
+
+      return p;
+    }
+
+    /* ================================================================
+       PREVIEWS
+       ================================================================ */
+    function updateBoardPreview() {
+      const light = getComputedStyle(document.documentElement).getPropertyValue('--board-light').trim();
+      const dark  = getComputedStyle(document.documentElement).getPropertyValue('--board-dark').trim();
+      const preview = $('board-preview');
+      preview.innerHTML =
+        '<div style="background:' + light + '"></div>' +
+        '<div style="background:' + dark + '"></div>' +
+        '<div style="background:' + dark + '"></div>' +
+        '<div style="background:' + light + '"></div>';
+    }
+
+    function updatePiecePreview(setName) {
+      const base = PIECE_SETS[setName] || PIECE_SETS.horsey;
+      $('piece-preview-img').src = base + 'wN.svg';
+      $('piece-preview-img').onerror = function() {
+        this.src = PIECE_SETS.horsey + 'wN.svg';
+      };
+    }
+
+    function applyBoardTheme(name) {
+      if (name === 'custom') return;
+      const t = BOARD_THEMES[name] || BOARD_THEMES.blue;
+      document.documentElement.style.setProperty('--board-light', t.light);
+      document.documentElement.style.setProperty('--board-dark',  t.dark);
+      currentBoardColor = name;
+      updateBoardPreview();
+    }
+
+    function applyPieceSet(setName) {
+      const base = PIECE_SETS[setName] || PIECE_SETS.horsey;
+      currentPieceSet = setName;
+      const pieces = [
+        { code: 'wP', classes: ['pawn', 'white'] },
+        { code: 'wN', classes: ['knight', 'white'] },
+        { code: 'wB', classes: ['bishop', 'white'] },
+        { code: 'wR', classes: ['rook', 'white'] },
+        { code: 'wQ', classes: ['queen', 'white'] },
+        { code: 'wK', classes: ['king', 'white'] },
+        { code: 'bP', classes: ['pawn', 'black'] },
+        { code: 'bN', classes: ['knight', 'black'] },
+        { code: 'bB', classes: ['bishop', 'black'] },
+        { code: 'bR', classes: ['rook', 'black'] },
+        { code: 'bQ', classes: ['queen', 'black'] },
+        { code: 'bK', classes: ['king', 'black'] }
+      ];
+      let style = document.getElementById('piece-set-style');
+      if (!style) {
+        style = document.createElement('style');
+        style.id = 'piece-set-style';
+        document.head.appendChild(style);
+      }
+      let css = '';
+      pieces.forEach(p => {
+        const cls = p.classes.map(c => '.' + c).join('');
+        css += '.puzzle-widget .cg-wrap piece' + cls +
+               ' { background-image: url("' + base + p.code + '.svg") !important; }\n';
+      });
+      style.textContent = css;
+      updateTurnIndicator();
+    }
+
+    function updateTurnIndicator() {
+      if (!game) return;
+      const el    = $('turn-indicator');
+      const piece = $('turn-piece');
+      const text  = $('turn-text');
+      const turn  = game.turn() === 'w' ? 'white' : 'black';
+
+      if (turn === userColor) {
+        el.classList.add('visible');
+        const base = PIECE_SETS[currentPieceSet] || PIECE_SETS.horsey;
+        const code = turn === 'white' ? 'wK' : 'bK';
+        piece.src = base + code + '.svg';
+        piece.onerror = function() {
+          this.src = PIECE_SETS.horsey + code + '.svg';
+        };
+        text.textContent = t('your_turn') + (userColor === 'white' ? t('white') : t('black'));
+      } else {
+        el.classList.remove('visible');
+      }
+    }
+
+    /* ================================================================
+       RESIZE
+       ================================================================ */
+    let resizeTimer = null;
+    function handleResize() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => { if (cg) cg.redrawAll(); }, 150);
+    }
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', () => setTimeout(handleResize, 200));
+
+    function ratingToDifficulty(str) {
+      if (!str) return '';
+      let r = parseInt(str.replace(/\D/g, ''), 10);
+      if (isNaN(r) || r <= 0) return '';
+      if (r < 100) r = r * 100;
+      if (r >= 2100) return 'hardest';
+      if (r >= 1800) return 'harder';
+      if (r >= 1200) return 'normal';
+      if (r >= 900)  return 'easier';
+      return 'easiest';
+    }
+
+    /* AUDIO */
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        catch (e) { console.warn('Web Audio not supported:', e); }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function playTone(freq, dur, type = 'sine', gain = 0.15) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const g   = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      g.gain.setValueAtTime(gain, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      osc.connect(g); g.connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + dur);
+    }
+    function soundMove()    { initAudio(); playTone(520, 0.08, 'sine', 0.18); }
+    function soundCapture() { initAudio(); playTone(320, 0.12, 'triangle', 0.22); }
+    function soundCheck()   { initAudio(); playTone(660, 0.07, 'square', 0.15);
+                              setTimeout(() => playTone(880, 0.07, 'square', 0.15), 80); }
+
+    const ICON_OK    = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+    const ICON_ERROR = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+    const ICON_INFO  = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+    const ICON_HINT  = '<svg viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>';
+    const ICON_KEY   = '<svg viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.5 12.5 21 2"/><path d="M18 5l3 3"/><path d="M15 8l3 3"/></svg>';
+
+    function showBanner(iconSvg, text, type = 'info', duration = 2500) {
+      const el = $('puzzle-banner');
+      el.innerHTML = iconSvg + '<span>' + text + '</span>';
+      el.className = 'visible ' + type;
+      clearTimeout(el._timer);
+      if (duration > 0) el._timer = setTimeout(() => { el.className = ''; }, duration);
+    }
+
+    function showInfoToast() {
+      const el = $('info-toast');
+      const base = PIECE_SETS[currentPieceSet] || PIECE_SETS.horsey;
+      const kingCode = userColor === 'white' ? 'wK' : 'bK';
+      const kingSrc = base + kingCode + '.svg';
+      const orientLabel = boardOrientation === 'auto'
+        ? t('orient_auto')
+        : (boardOrientation === 'white' ? t('orient_white') : t('orient_black'));
+
+      let html = '<img class="toast-piece" src="' + kingSrc + '" alt="" onerror="this.src=\'' + PIECE_SETS.horsey + kingCode + '.svg\'" />';
+      html += '<div class="info-text">';
+      html += '<div class="info-title">' + t('you_play') + (userColor === 'white' ? t('white') : t('black')) + '</div>';
+      if (puzzleRating) html += '<div class="info-row"><span class="k">' + t('rating_label') + '</span><span class="v rating">' + puzzleRating + '</span></div>';
+      if (puzzlePerf)   html += '<div class="info-row"><span class="k">' + t('game_type') + '</span><span class="v">' + puzzlePerf + (puzzleRated ? ' · rated' : ' · casual') + '</span></div>';
+      if (puzzleClock)  html += '<div class="info-row"><span class="k">' + t('time_label') + '</span><span class="v">' + puzzleClock + '</span></div>';
+      html += '<div class="info-row"><span class="k">' + t('theme_label') + '</span><span class="v">' + currentTheme + '</span></div>';
+      html += '<div class="info-row"><span class="k">' + t('board_label') + '</span><span class="v">' + (currentBoardColor === 'custom' ? t('custom') : (BOARD_THEMES[currentBoardColor]?.label || 'Blue')) + '</span></div>';
+      html += '<div class="info-row"><span class="k">' + t('orient_label') + '</span><span class="v">' + orientLabel + '</span></div>';
+      html += '</div>';
+
+      el.innerHTML = html;
+      el.classList.add('visible');
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => el.classList.remove('visible'), 3000);
+    }
+
+    function showSolutionBox(moves) {
+      const el = $('puzzle-message');
+      let html = ICON_KEY + '<div class="msg-text"><span>' + t('solution_title') + moves.length + t('moves') + '</span><div class="move-list">';
+      moves.forEach((san, i) => { html += '<span class="move-chip">' + (i + 1) + '. ' + san + '</span>'; });
+      html += '</div></div><button class="close-btn" id="msg-close">×</button>';
+      el.innerHTML = html;
+      el.classList.add('visible');
+      $('msg-close').addEventListener('click', () => el.classList.remove('visible'));
+    }
+
+    function clearHints() {
+      document.querySelectorAll('.hint-origin').forEach(el => el.classList.remove('hint-origin'));
+    }
+    function getDests(chess) {
+      const dests = new Map();
+      chess.moves({ verbose: true }).forEach(m => {
+        if (!dests.has(m.from)) dests.set(m.from, []);
+        dests.get(m.from).push(m.to);
+      });
+      return dests;
+    }
+    function uciToSan(uci) {
+      const from = uci.slice(0, 2);
+      const to   = uci.slice(2, 4);
+      const tmp  = new Chess(game.fen());
+      const move = tmp.move({ from, to, promotion: uci[4] || 'q' });
+      return move ? move.san : (from + to).toUpperCase();
+    }
+
+    function computeOrientation() {
+      if (boardOrientation === 'auto') return userColor;
+      return boardOrientation;
+    }
+    function applyOrientation() { if (cg) cg.set({ orientation: computeOrientation() }); }
+
+    function initBoard(fen) {
+      if (cg) cg.destroy();
+      cg = Chessground($('board'), {
+        fen: fen,
+        orientation: computeOrientation(),
+        turnColor: 'white',
+        blockTouchScroll: true,
+        movable: {
+          free: false,
+          color: 'white',
+          dests: getDests(game),
+          events: { after: (orig, dest) => onUserMove(orig, dest) }
+        },
+        draggable: { enabled: true, showGhost: true, distance: 0, autoDistance: false },
+        selectable: { enabled: true },
+        animation: { enabled: true, duration: 200 },
+        highlight: { lastMove: true, check: true },
+        premovable: { enabled: false },
+        drawable: { enabled: false }
+      });
+      applyPieceSet(currentPieceSet);
+    }
+
+    function updateMovable() {
+      if (!cg || !game) return;
+      const turn = game.turn() === 'w' ? 'white' : 'black';
+      cg.set({
+        turnColor: turn,
+        movable: {
+          color: turn === userColor ? userColor : undefined,
+          dests: turn === userColor ? getDests(game) : new Map()
+        }
+      });
+      updateTurnIndicator();
+    }
+
+    function parsePuzzle(data) {
+      currentTheme = (data.puzzle?.themes || []).join(' · ') || 'Puzzle';
+      $('puzzle-theme').textContent = currentTheme;
+
+      puzzleRating = data.puzzle?.rating || null;
+      puzzlePerf   = data.game?.perf?.name || '';
+      puzzleClock  = data.game?.clock || '';
+      puzzleRated  = data.game?.rated || false;
+
+      puzzlePgn = data.game.pgn;
+      game = new Chess();
+      game.loadPgn(puzzlePgn);
+
+      const fenBefore = game.fen();
+      solution = data.puzzle.solution || [];
+
+      const turn = game.turn();
+      userColor = turn === 'w' ? 'black' : 'white';
+      moveIndex = 0;
+
+      initBoard(fenBefore);
+      applyOrientation();
+      playOpponentMove();
+    }
+
+    function playOpponentMove() {
+      if (!game || moveIndex >= solution.length) return;
+      const uci  = solution[moveIndex];
+      const from = uci.slice(0, 2);
+      const to   = uci.slice(2, 4);
+      const isCapture = game.get(to) !== null;
+      game.move({ from, to, promotion: uci[4] || 'q' });
+      if (cg) cg.set({
+        fen: game.fen(),
+        turnColor: game.turn() === 'w' ? 'white' : 'black',
+        lastMove: [from, to]
+      });
+      if (isCapture) soundCapture(); else soundMove();
+      moveIndex++;
+      updateMovable();
+      if (moveIndex >= solution.length) {
+        showBanner(ICON_OK, t('puzzle_solved'), 'ok', 4000);
+        cg.set({ movable: { color: undefined, dests: new Map() } });
+      }
+    }
+
+    function onUserMove(orig, dest) {
+      if (!game || !cg) return;
+      const turn = game.turn() === 'w' ? 'white' : 'black';
+      if (turn !== userColor) return;
+
+      const legal = game.moves({ verbose: true });
+      const move  = legal.find(m => m.from === orig && m.to === dest);
+      if (!move) {
+        let reason = t('illegal');
+        const piece = game.get(orig);
+        if (!piece) reason = t('no_piece');
+        else if (piece.color !== game.turn()) reason = t('not_your_turn');
+        else if (game.inCheck()) reason = t('you_in_check');
+        else {
+          const target = game.get(dest);
+          if (target && target.color === piece.color) reason = t('cannot_capture_own');
+          else reason = t('cannot_move_there');
+        }
+        showBanner(ICON_ERROR, reason, 'error', 2500);
+        return;
+      }
+
+      const san = move.san || (orig + dest).toUpperCase();
+      const wasCapture = game.get(dest) !== null;
+      game.move({ from: orig, to: dest, promotion: 'q' });
+      if (wasCapture) soundCapture(); else soundMove();
+      if (game.inCheck()) soundCheck();
+
+      cg.set({
+        fen: game.fen(),
+        turnColor: game.turn() === 'w' ? 'white' : 'black',
+        lastMove: [orig, dest]
+      });
+
+      const expectedUci  = solution[moveIndex];
+      const expectedFrom = expectedUci.slice(0, 2);
+      const expectedTo   = expectedUci.slice(2, 4);
+
+      if (orig === expectedFrom && dest === expectedTo) {
+        showBanner(ICON_OK, t('correct') + san, 'ok', 1500);
+        moveIndex++;
+        if (moveIndex < solution.length) setTimeout(() => playOpponentMove(), 400);
+        else {
+          showBanner(ICON_OK, t('puzzle_solved'), 'ok', 4000);
+          cg.set({ movable: { color: undefined, dests: new Map() } });
+          updateTurnIndicator();
+        }
+      } else {
+        showBanner(ICON_ERROR, t('incorrect') + san + t('is_not_solution'), 'error', 2500);
+        game.undo();
+        cg.set({
+          fen: game.fen(),
+          turnColor: game.turn() === 'w' ? 'white' : 'black',
+          lastMove: [expectedFrom, expectedTo]
+        });
+      }
+    }
+
+    function handleHint() {
+      if (!game || moveIndex >= solution.length) {
+        showBanner(ICON_INFO, t('no_more_hints'), 'info', 2000);
+        return;
+      }
+      const uci  = solution[moveIndex];
+      const from = uci.slice(0, 2);
+      const to   = uci.slice(2, 4);
+      const san  = uciToSan(uci);
+      clearHints();
+      const fromSquare = document.querySelector('.cg-wrap square[data-square="' + from + '"]');
+      if (fromSquare) fromSquare.classList.add('hint-origin');
+      if (cg) {
+        const tmp = new Chess(game.fen());
+        tmp.move({ from, to, promotion: uci[4] || 'q' });
+        cg.set({ fen: tmp.fen(), lastMove: [from, to] });
+        setTimeout(() => {
+          cg.set({ fen: game.fen(), turnColor: game.turn() === 'w' ? 'white' : 'black' });
+        }, 600);
+      }
+      showBanner(ICON_HINT, t('move_from') + san + ' (' + from.toUpperCase() + ' → ' + to.toUpperCase() + ')', 'info', 4000);
+    }
+
+    function handleSolution() {
+      if (!solution.length) return;
+      const remaining = solution.slice(moveIndex);
+      if (remaining.length === 0) {
+        showBanner(ICON_OK, t('already_solved'), 'ok', 2000);
+        return;
+      }
+      const sanMoves = [];
+      const tmpGame = new Chess(game.fen());
+      for (const uci of remaining) {
+        const from = uci.slice(0, 2);
+        const to   = uci.slice(2, 4);
+        const mv = tmpGame.move({ from, to, promotion: uci[4] || 'q' });
+        sanMoves.push(mv ? mv.san : (from + to).toUpperCase());
+      }
+      showSolutionBox(sanMoves);
+
+      let i = 0;
+      const playNext = () => {
+        if (i >= remaining.length) return;
+        const uci  = remaining[i];
+        const from = uci.slice(0, 2);
+        const to   = uci.slice(2, 4);
+        const tmp = new Chess(game.fen());
+        for (let j = 0; j <= i; j++) {
+          const u = remaining[j];
+          tmp.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] || 'q' });
+        }
+        cg.set({ fen: tmp.fen(), lastMove: [from, to], turnColor: tmp.turn() === 'w' ? 'white' : 'black' });
+        i++;
+        if (i < remaining.length) setTimeout(playNext, 800);
+        else setTimeout(() => {
+          cg.set({ fen: game.fen(), turnColor: game.turn() === 'w' ? 'white' : 'black' });
+        }, 800);
+      };
+      setTimeout(playNext, 300);
+    }
+
+    function handleReset() {
+      if (!solution.length || !puzzlePgn) return;
+      moveIndex = 0;
+      $('puzzle-message').classList.remove('visible');
+      clearHints();
+      game = new Chess();
+      game.loadPgn(puzzlePgn);
+      initBoard(game.fen());
+      applyOrientation();
+      playOpponentMove();
+      showBanner(ICON_INFO, t('puzzle_reset'), 'info', 1500);
+    }
+
+    async function loadPuzzle(theme = '', difficulty = '') {
+      $('puzzle-theme').textContent = t('loading');
+      showBanner(ICON_INFO, t('loading_puzzle'), 'info', 1500);
+      try {
+        let url = 'https://lichess.org/api/puzzle/next';
+        const params = [];
+        if (theme) params.push('angle=' + encodeURIComponent(theme));
+        if (difficulty) params.push('difficulty=' + encodeURIComponent(difficulty));
+        if (params.length) url += '?' + params.join('&');
+        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        parsePuzzle(data);
+        showBanner(ICON_OK, t('puzzle_loaded') + currentTheme, 'ok', 2000);
+      } catch (err) {
+        console.error('Error fetching puzzle:', err);
+        $('puzzle-theme').textContent = 'Error';
+        showBanner(ICON_ERROR, t('could_not_load') + err.message, 'error', 4000);
+      }
+    }
+
+    function levelIconSvg(level) {
+      let bars = '';
+      for (let i = 0; i < 5; i++) {
+        const x = 1 + i * 4;
+        const h = 4 + i * 3;
+        const y = 20 - h;
+        const on = i < level ? ' class="on"' : '';
+        bars += '<rect x="' + x + '" y="' + y + '" width="3" height="' + h + '" rx="1"' + on + '/>';
+      }
+      return '<svg class="level-icon" viewBox="0 0 22 22">' + bars + '</svg>';
+    }
+
+    /* Niveles: los nombres se mantienen en inglés como nombres propios de
+       marca (Baby, Sprout, Sapling, Tree, Forest), solo se traduce "Any level". */
+    const LEVELS = [
+      { id: '',         name: 'Any level', note: 'all ELOs',  range: 'all ELOs',    bars: 0, i18n: 'any_level' },
+      { id: 'easiest',  name: 'Baby',      note: 'very easy', range: '100 – 600',   bars: 1 },
+      { id: 'easier',   name: 'Sprout',    note: 'easy',      range: '600 – 1200',  bars: 2 },
+      { id: 'normal',   name: 'Sapling',   note: 'medium',    range: '1200 – 1800', bars: 3 },
+      { id: 'harder',   name: 'Tree',      note: 'hard',      range: '1800 – 2400', bars: 4 },
+      { id: 'hardest',  name: 'Forest',    note: 'very hard', range: '2400+',       bars: 5 }
+    ];
+
+    /* Añadir traducción "any_level" a cada idioma */
+    TRANSLATIONS.en.any_level = 'Any level';
+    TRANSLATIONS.es.any_level = 'Cualquier nivel';
+    TRANSLATIONS.fr.any_level = 'Tous niveaux';
+    TRANSLATIONS.de.any_level = 'Alle Stufen';
+    TRANSLATIONS.pt.any_level = 'Qualquer nível';
+    TRANSLATIONS.it.any_level = 'Qualsiasi livello';
+    TRANSLATIONS.ru.any_level = 'Любой уровень';
+    TRANSLATIONS.zh.any_level = '任意等级';
+
+    function buildLevelMenu() {
+      const menu = $('level-menu');
+      menu.innerHTML = '';
+      LEVELS.forEach((lvl) => {
+        const displayName = lvl.i18n ? t(lvl.i18n) : lvl.name;
+        const opt = document.createElement('div');
+        opt.className = 'option' + (lvl.id === '' ? ' selected' : '');
+        opt.dataset.value = lvl.id;
+        opt.innerHTML =
+          levelIconSvg(lvl.bars) +
+          '<span class="level-name">' + displayName + '</span>' +
+          '<span class="level-range">(' + lvl.note + ') ' + lvl.range + '</span>';
+        opt.addEventListener('click', () => selectLevel(lvl));
+        menu.appendChild(opt);
+      });
+      /* Si el trigger aún no refleja el nivel seleccionado, poner el "Any" */
+      if (!selectedLevel) {
+        const anyLvl = LEVELS[0];
+        $('level-trigger-icon').innerHTML  = levelIconSvg(anyLvl.bars);
+        $('level-trigger-name').textContent = t('any_level');
+        $('level-trigger-range').textContent = '(' + anyLvl.note + ') ' + anyLvl.range;
+      }
+    }
+
+    function selectLevel(lvl) {
+      selectedLevel = lvl.id;
+      const displayName = lvl.i18n ? t(lvl.i18n) : lvl.name;
+      $('level-trigger-icon').innerHTML  = levelIconSvg(lvl.bars);
+      $('level-trigger-name').textContent = displayName;
+      $('level-trigger-range').textContent = '(' + lvl.note + ') ' + lvl.range;
+      document.querySelectorAll('#level-menu .option').forEach(o => {
+        o.classList.toggle('selected', o.dataset.value === lvl.id);
+      });
+      $('level-dropdown').classList.remove('open');
+      $('inp-rating').value = '';
+      handleSearch();
+    }
+
+    $('level-trigger').addEventListener('click', (e) => {
+      e.stopPropagation();
+      $('level-dropdown').classList.toggle('open');
+    });
+    document.addEventListener('click', () => $('level-dropdown').classList.remove('open'));
+    $('level-menu').addEventListener('click', (e) => e.stopPropagation());
+
+    function handleSearch() {
+      const selected = $('sel-theme').value;
+      const text     = $('inp-search').value.trim().toLowerCase();
+      const theme    = selected || text;
+      const ratingStr = $('inp-rating').value.trim();
+      const difficulty = ratingStr ? ratingToDifficulty(ratingStr) : selectedLevel;
+      loadPuzzle(theme, difficulty);
+    }
+
+    $('btn-lupa').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const widget = $('puzzle-widget');
+      widget.classList.toggle('clean');
+      if (widget.classList.contains('clean')) {
+        showInfoToast();
+      }
+    });
+
+    const widget = $('puzzle-widget');
+    let tapTimes = [];
+    widget.addEventListener('click', (e) => {
+      const tag = e.target.tagName.toLowerCase();
+      if (tag === 'piece' || tag === 'square' || tag === 'cg-board' || tag === 'coords' || tag === 'coord') return;
+
+      const rect = widget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const now = Date.now();
+      const ZONE = 80;
+      const WINDOW = 1000;
+
+      const inTL = x < ZONE && y < ZONE;
+      const inTR = x > rect.width - ZONE && y < ZONE;
+      const inBL = x < ZONE && y > rect.height - ZONE;
+      const inBR = x > rect.width - ZONE && y > rect.height - ZONE;
+
+      if (inTL || inTR || inBL || inBR) {
+        tapTimes = tapTimes.filter(t => now - t < WINDOW);
+        tapTimes.push(now);
+        if (tapTimes.length >= 3) {
+          tapTimes = [];
+          widget.classList.remove('clean');
+          showBanner(ICON_INFO, t('panel_shown'), 'info', 1200);
+        }
+      } else {
+        tapTimes = [];
+      }
+    });
+
+    /* ================================================================
+       LISTENERS
+       ================================================================ */
+    $('sel-language').addEventListener('change', (e) => {
+      currentLang = e.target.value;
+      document.documentElement.lang = currentLang;
+      applyTranslations();
+      /* Actualizar banner si hay partida en curso */
+      if (game) updateTurnIndicator();
+    });
+
+    $('sel-piece-set').addEventListener('change', (e) => {
+      applyPieceSet(e.target.value);
+      updatePiecePreview(e.target.value);
+    });
+
+    $('sel-board-color').addEventListener('change', (e) => {
+      if (e.target.value === 'custom') {
+        $('custom-colors').style.display = 'flex';
+        applyCustomColors();
+      } else {
+        $('custom-colors').style.display = 'none';
+        applyBoardTheme(e.target.value);
+      }
+    });
+
+    function applyCustomColors() {
+      const light = $('inp-custom-light').value;
+      const dark  = $('inp-custom-dark').value;
+      document.documentElement.style.setProperty('--board-light', light);
+      document.documentElement.style.setProperty('--board-dark',  dark);
+      currentBoardColor = 'custom';
+      $('inp-custom-light-hex').value = light;
+      $('inp-custom-dark-hex').value = dark;
+      updateBoardPreview();
+    }
+
+    $('inp-custom-light').addEventListener('input', applyCustomColors);
+    $('inp-custom-dark').addEventListener('input', applyCustomColors);
+    $('inp-custom-light-hex').addEventListener('input', (e) => {
+      if (isValidHex(e.target.value)) {
+        $('inp-custom-light').value = normalizeHex(e.target.value);
+        applyCustomColors();
+      }
+    });
+    $('inp-custom-dark-hex').addEventListener('input', (e) => {
+      if (isValidHex(e.target.value)) {
+        $('inp-custom-dark').value = normalizeHex(e.target.value);
+        applyCustomColors();
+      }
+    });
+
+    $('sel-widget-bg').addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val === 'transparent') {
+        document.documentElement.style.setProperty('--widget-bg', 'transparent');
+      } else if (val === 'black') {
+        document.documentElement.style.setProperty('--widget-bg', '#000000');
+      } else if (val === 'white') {
+        document.documentElement.style.setProperty('--widget-bg', '#ffffff');
+      } else if (val === 'custom') {
+        document.documentElement.style.setProperty('--widget-bg', $('inp-bg-color').value);
+      }
+    });
+
+    $('inp-bg-color').addEventListener('input', (e) => {
+      if ($('sel-widget-bg').value === 'custom') {
+        document.documentElement.style.setProperty('--widget-bg', e.target.value);
+      }
+    });
+
+    $('sel-orientation').addEventListener('change', (e) => {
+      boardOrientation = e.target.value;
+      applyOrientation();
+    });
+
+    $('btn-hint').addEventListener('click', handleHint);
+    $('btn-solution').addEventListener('click', handleSolution);
+    $('btn-reset').addEventListener('click', handleReset);
+    $('btn-next').addEventListener('click', () => handleSearch());
+    $('btn-search').addEventListener('click', handleSearch);
+    $('sel-theme').addEventListener('change', handleSearch);
+    $('inp-search').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSearch(); });
+    $('inp-rating').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSearch(); });
+
+    /* ================================================================
+       INICIO
+       ================================================================ */
+    applyBoardTheme('blue');
+    applyPieceSet('horsey');
+    updatePiecePreview('horsey');
+    const urlParams = applyUrlParams();
+    applyTranslations();
+    loadPuzzle('', urlParams.difficulty || selectedLevel || '');
+  </script>
+</body>
+</html>
