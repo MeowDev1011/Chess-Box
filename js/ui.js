@@ -35,7 +35,7 @@ export function showInfoToast() {
   const el = $('info-toast');
   if (!el) return;
 
-  const base = PIECE_SETS[state.currentPieceSet] || PIECE_SETS.horsey;
+  const base = PIECE_SETS[state.currentPieceSet] || PIECE_SETS.cburnett;
   const kingCode = state.userColor === 'white' ? 'wK' : 'bK';
   const kingSrc  = base + kingCode + '.svg';
 
@@ -43,7 +43,7 @@ export function showInfoToast() {
     : (state.boardOrientation === 'white' ? t('orient_white') : t('orient_black'));
 
   let html = '<img class="toast-piece" src="' + kingSrc + '" alt="" ' +
-             'onerror="this.src=\'' + PIECE_SETS.horsey + kingCode + '.svg\'" />';
+             'onerror="this.src=\'' + PIECE_SETS.cburnett + kingCode + '.svg\'" />';
   html += '<div class="info-text">';
   html += '<div class="info-title">' + t('you_play') +
           (state.userColor === 'white' ? t('white') : t('black')) + '</div>';
@@ -65,7 +65,7 @@ export function showInfoToast() {
           '</span><span class="v">' + state.currentTheme + '</span></div>';
   html += '<div class="info-row"><span class="k">' + t('board_label') +
           '</span><span class="v">' +
-          (BOARD_THEMES[state.currentBoardColor]?.label || 'Blue') +
+          (BOARD_THEMES[state.currentBoardColor]?.label || 'Blue (Lichess)') +
           '</span></div>';
   html += '<div class="info-row"><span class="k">' + t('orient_label') +
           '</span><span class="v">' + orientLabel + '</span></div>';
@@ -93,10 +93,10 @@ export function updateTurnIndicator() {
 
   if (turn === state.userColor) {
     el.classList.add('visible');
-    const base = PIECE_SETS[state.currentPieceSet] || PIECE_SETS.horsey;
+    const base = PIECE_SETS[state.currentPieceSet] || PIECE_SETS.cburnett;
     const code = turn === 'white' ? 'wK' : 'bK';
     img.src = base + code + '.svg';
-    img.onerror = function () { this.src = PIECE_SETS.horsey + code + '.svg'; };
+    img.onerror = function () { this.src = PIECE_SETS.cburnett + code + '.svg'; };
     text.textContent = t('your_turn') +
       (state.userColor === 'white' ? t('white') : t('black'));
   } else {
@@ -127,11 +127,11 @@ export function updateBoardPreview() {
    Shows the white knight of the current piece set.
    ============================================================ */
 export function updatePiecePreview(setName) {
-  const base = PIECE_SETS[setName] || PIECE_SETS.horsey;
+  const base = PIECE_SETS[setName] || PIECE_SETS.cburnett;
   const img  = $('piece-preview-img');
   if (!img) return;
   img.src = base + 'wN.svg';
-  img.onerror = function () { this.src = PIECE_SETS.horsey + 'wN.svg'; };
+  img.onerror = function () { this.src = PIECE_SETS.cburnett + 'wN.svg'; };
 }
 
 /* ============================================================
@@ -168,8 +168,7 @@ export function applyTranslations() {
     if (val) el.title = val;
   });
 
-  /* Hardcoded button titles (they live outside the data-i18n scope
-     because they use inline SVG icons). */
+  /* Hardcoded button titles */
   const titles = {
     'btn-hint':     'hint',
     'btn-solution': 'solution',
