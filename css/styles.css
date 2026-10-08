@@ -10,7 +10,7 @@
   --board-light: #dee3e6;
   --board-dark:  #4a75a0;
   --coord-size: 11px;
-  --widget-bg: transparent;
+  --widget-bg: #ffffff;
   --board-max: 440px;
   --panel-max: 440px;
 }
@@ -20,8 +20,9 @@
    ============================================================ */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body {
-  background: transparent !important;
+  background: #ffffff;
   height: 100%;
+  overflow-x: hidden;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -85,20 +86,20 @@ html, body {
 }
 
 /* ============================================================
-   FALLBACK PIECES (Horsey) — JS injects the active set on top
+   FALLBACK PIECES (Cburnett) — JS injects the active set on top
    ============================================================ */
-.puzzle-widget .cg-wrap piece.pawn.white   { background-image: url('https://lichess1.org/assets/piece/horsey/wP.svg'); }
-.puzzle-widget .cg-wrap piece.knight.white { background-image: url('https://lichess1.org/assets/piece/horsey/wN.svg'); }
-.puzzle-widget .cg-wrap piece.bishop.white { background-image: url('https://lichess1.org/assets/piece/horsey/wB.svg'); }
-.puzzle-widget .cg-wrap piece.rook.white   { background-image: url('https://lichess1.org/assets/piece/horsey/wR.svg'); }
-.puzzle-widget .cg-wrap piece.queen.white  { background-image: url('https://lichess1.org/assets/piece/horsey/wQ.svg'); }
-.puzzle-widget .cg-wrap piece.king.white   { background-image: url('https://lichess1.org/assets/piece/horsey/wK.svg'); }
-.puzzle-widget .cg-wrap piece.pawn.black   { background-image: url('https://lichess1.org/assets/piece/horsey/bP.svg'); }
-.puzzle-widget .cg-wrap piece.knight.black { background-image: url('https://lichess1.org/assets/piece/horsey/bN.svg'); }
-.puzzle-widget .cg-wrap piece.bishop.black { background-image: url('https://lichess1.org/assets/piece/horsey/bB.svg'); }
-.puzzle-widget .cg-wrap piece.rook.black   { background-image: url('https://lichess1.org/assets/piece/horsey/bR.svg'); }
-.puzzle-widget .cg-wrap piece.queen.black  { background-image: url('https://lichess1.org/assets/piece/horsey/bQ.svg'); }
-.puzzle-widget .cg-wrap piece.king.black   { background-image: url('https://lichess1.org/assets/piece/horsey/bK.svg'); }
+.puzzle-widget .cg-wrap piece.pawn.white   { background-image: url('https://lichess1.org/assets/piece/cburnett/wP.svg'); }
+.puzzle-widget .cg-wrap piece.knight.white { background-image: url('https://lichess1.org/assets/piece/cburnett/wN.svg'); }
+.puzzle-widget .cg-wrap piece.bishop.white { background-image: url('https://lichess1.org/assets/piece/cburnett/wB.svg'); }
+.puzzle-widget .cg-wrap piece.rook.white   { background-image: url('https://lichess1.org/assets/piece/cburnett/wR.svg'); }
+.puzzle-widget .cg-wrap piece.queen.white  { background-image: url('https://lichess1.org/assets/piece/cburnett/wQ.svg'); }
+.puzzle-widget .cg-wrap piece.king.white   { background-image: url('https://lichess1.org/assets/piece/cburnett/wK.svg'); }
+.puzzle-widget .cg-wrap piece.pawn.black   { background-image: url('https://lichess1.org/assets/piece/cburnett/bP.svg'); }
+.puzzle-widget .cg-wrap piece.knight.black { background-image: url('https://lichess1.org/assets/piece/cburnett/bN.svg'); }
+.puzzle-widget .cg-wrap piece.bishop.black { background-image: url('https://lichess1.org/assets/piece/cburnett/bB.svg'); }
+.puzzle-widget .cg-wrap piece.rook.black   { background-image: url('https://lichess1.org/assets/piece/cburnett/bR.svg'); }
+.puzzle-widget .cg-wrap piece.queen.black  { background-image: url('https://lichess1.org/assets/piece/cburnett/bQ.svg'); }
+.puzzle-widget .cg-wrap piece.king.black   { background-image: url('https://lichess1.org/assets/piece/cburnett/bK.svg'); }
 .puzzle-widget .cg-wrap piece { touch-action: none !important; }
 
 /* ============================================================
@@ -277,8 +278,8 @@ html, body {
   flex-wrap: wrap;
 }
 .puzzle-controls button {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 8px;
   width: 44px;
   height: 44px;
@@ -287,21 +288,20 @@ html, body {
   justify-content: center;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease;
-  backdrop-filter: blur(4px);
   -webkit-tap-highlight-color: transparent;
 }
-.puzzle-controls button:hover  { background: rgba(255, 255, 255, 0.28); }
+.puzzle-controls button:hover  { background: rgba(0, 0, 0, 0.15); }
 .puzzle-controls button:active { transform: scale(0.94); }
 .puzzle-controls button svg {
   width: 22px;
   height: 22px;
   fill: none;
-  stroke: #e0e0e0;
+  stroke: #333;
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-#btn-expand.active { background: rgba(74, 117, 160, 0.6); }
+#btn-expand.active { background: rgba(74, 117, 160, 0.5); }
 
 /* ============================================================
    MOVE HISTORY
@@ -311,11 +311,11 @@ html, body {
   max-height: 220px;
   overflow-y: auto;
   padding: 10px;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.08);
   border-radius: 8px;
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 13px;
-  color: #ddd;
+  color: #222;
   display: none;
 }
 .move-history.visible { display: block; }
@@ -323,11 +323,11 @@ html, body {
   display: flex;
   gap: 8px;
   padding: 2px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 .move-history .mh-num   { color: #888; min-width: 28px; }
-.move-history .mh-white { color: #fff; min-width: 70px; }
-.move-history .mh-black { color: #b8c8d8; min-width: 70px; }
+.move-history .mh-white { color: #111; min-width: 70px; }
+.move-history .mh-black { color: #555; min-width: 70px; }
 
 /* ============================================================
    CONFIGURATION PANEL
@@ -338,10 +338,9 @@ html, body {
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 10px;
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -353,9 +352,9 @@ html, body {
 }
 
 .puzzle-selector label {
-  color: #ddd;
+  color: #333;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -364,21 +363,21 @@ html, body {
   width: 100%;
   padding: 8px 10px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: #ffffff;
+  color: #222;
   font-size: 13px;
   outline: none;
 }
-.puzzle-selector select option { background: #1a1a2e; color: #fff; }
-.puzzle-selector input::placeholder { color: rgba(255, 255, 255, 0.5); }
+.puzzle-selector select option { background: #ffffff; color: #222; }
+.puzzle-selector input::placeholder { color: rgba(0, 0, 0, 0.35); }
 .puzzle-selector .row { display: flex; gap: 8px; align-items: center; }
 .puzzle-selector .row button {
   flex: 1;
   height: 36px;
   padding: 0 16px;
-  background: rgba(74, 117, 160, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #4a75a0;
+  border: none;
   border-radius: 6px;
   color: #fff;
   font-size: 13px;
@@ -386,9 +385,9 @@ html, body {
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.puzzle-selector .row button:hover { background: rgba(74, 117, 160, 1); }
+.puzzle-selector .row button:hover { background: #3b5f83; }
 .puzzle-selector .hint-text {
-  color: #888;
+  color: #777;
   font-size: 11px;
   line-height: 1.4;
   margin-top: -4px;
@@ -410,7 +409,7 @@ html, body {
   height: 40px;
   border-radius: 4px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
 }
 .piece-preview {
@@ -429,7 +428,7 @@ html, body {
 .custom-color-row input[type="color"] {
   width: 40px;
   height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 6px;
   background: transparent;
   cursor: pointer;
@@ -450,10 +449,10 @@ html, body {
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 6px;
-  color: #fff;
+  color: #222;
   font-size: 13px;
   cursor: pointer;
 }
@@ -462,13 +461,13 @@ html, body {
   width: 12px;
   height: 12px;
   fill: none;
-  stroke: #ccc;
+  stroke: #666;
   stroke-width: 2;
   transition: transform 0.2s ease;
 }
 .level-dropdown.open .trigger .arrow { transform: rotate(180deg); }
 .level-dropdown .trigger .level-name  { font-weight: 600; }
-.level-dropdown .trigger .level-range { color: #aaa; font-size: 11px; }
+.level-dropdown .trigger .level-range { color: #888; font-size: 11px; }
 
 .level-dropdown .menu {
   position: absolute;
@@ -476,15 +475,14 @@ html, body {
   left: 0;
   right: 0;
   z-index: 100;
-  background: rgba(20, 25, 40, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 8px;
   padding: 6px;
   display: none;
   flex-direction: column;
   gap: 2px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   max-height: 280px;
   overflow-y: auto;
 }
@@ -496,21 +494,21 @@ html, body {
   padding: 8px 10px;
   border-radius: 6px;
   cursor: pointer;
-  color: #e0e0e0;
+  color: #333;
   font-size: 13px;
 }
-.level-dropdown .option:hover { background: rgba(255, 255, 255, 0.08); }
-.level-dropdown .option.selected { background: rgba(74, 117, 160, 0.35); color: #fff; }
+.level-dropdown .option:hover { background: rgba(0, 0, 0, 0.06); }
+.level-dropdown .option.selected { background: rgba(74, 117, 160, 0.2); color: #000; }
 .level-dropdown .option .level-name  { font-weight: 600; }
 .level-dropdown .option .level-range {
   margin-left: auto;
-  color: #9bb8d3;
+  color: #4a75a0;
   font-size: 11px;
   font-family: ui-monospace, monospace;
 }
 .level-icon { width: 22px; height: 22px; flex-shrink: 0; display: block; }
-.level-icon rect { fill: rgba(255, 255, 255, 0.18); }
-.level-icon rect.on { fill: #7ec8e3; }
+.level-icon rect { fill: rgba(0, 0, 0, 0.15); }
+.level-icon rect.on { fill: #4a75a0; }
 
 /* ============================================================
    MODAL
@@ -518,25 +516,24 @@ html, body {
 .cb-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.55);
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  backdrop-filter: blur(4px);
   padding: 16px;
 }
 .cb-modal-overlay.visible { display: flex; }
 
 .cb-modal {
-  background: #151a26;
-  color: #f0f0f0;
+  background: #ffffff;
+  color: #222;
   border-radius: 12px;
   padding: 20px;
   max-width: 460px;
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   animation: cbModalIn 0.2s ease-out;
 }
 @keyframes cbModalIn {
@@ -546,7 +543,7 @@ html, body {
 .cb-modal h3 {
   font-size: 16px;
   margin-bottom: 10px;
-  color: #7ec8e3;
+  color: #4a75a0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -554,18 +551,36 @@ html, body {
 .cb-modal .cb-modal-body {
   font-size: 14px;
   line-height: 1.5;
-  color: #d8d8d8;
+  color: #333;
   margin-bottom: 16px;
   max-height: 50vh;
   overflow-y: auto;
 }
 .cb-modal .cb-modal-body code {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.06);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: ui-monospace, monospace;
-  color: #7ec8e3;
+  color: #4a75a0;
   word-break: break-all;
+}
+.cb-modal .cb-modal-body .info-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.cb-modal .cb-modal-body .info-row .k {
+  color: #777;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  min-width: 120px;
+}
+.cb-modal .cb-modal-body .info-row .v {
+  color: #111;
+  font-weight: 700;
 }
 .cb-modal .cb-modal-actions {
   display: flex;
@@ -584,7 +599,7 @@ html, body {
 }
 .cb-modal .cb-modal-actions button:hover { opacity: 0.85; }
 .cb-modal .btn-primary   { background: #4a75a0; color: #fff; }
-.cb-modal .btn-secondary { background: rgba(255, 255, 255, 0.12); color: #e0e0e0; }
+.cb-modal .btn-secondary { background: rgba(0, 0, 0, 0.08); color: #333; }
 
 /* ============================================================
    RESPONSIVE & FULLSCREEN
@@ -603,7 +618,8 @@ html, body {
 .puzzle-widget.no-config .puzzle-selector { display: none !important; }
 
 @media (max-width: 480px) {
-  .puzzle-widget { padding: 4px; }
+  .puzzle-widget { padding: 4px; max-width: 100%; }
   .board-area { max-width: 100%; }
   .puzzle-controls button { width: 40px; height: 40px; }
+  .puzzle-controls button svg { width: 20px; height: 20px; }
 }
