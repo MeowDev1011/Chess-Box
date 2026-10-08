@@ -20,18 +20,24 @@ export const PIECE_CODES = PIECE_CODES_2D;
    3D themes trigger the is3d CSS mode when selected.
    ============================================================ */
 export const BOARD_THEMES = {
+  /* -------- 2D themes -------- */
+  brown:  { light: '#f0d9b5', dark: '#b58863', label: 'Brown (Classic)' },
   blue:   { light: '#dee3e6', dark: '#4a75a0', label: 'Blue (Lichess)' },
   green:  { light: '#eeeed2', dark: '#769656', label: 'Green' },
-  brown:  { light: '#f0d9b5', dark: '#b58863', label: 'Brown' },
   gray:   { light: '#f0f0f0', dark: '#808080', label: 'Gray' },
   dark:   { light: '#7a8a9a', dark: '#2c3e50', label: 'Dark' },
   light:  { light: '#fafafa', dark: '#c0c0c0', label: 'Light' },
   wood:   { light: '#e8c99b', dark: '#8b5a2b', label: 'Wood' },
   marble: { light: '#e8e8e8', dark: '#5a5a5a', label: 'Marble' },
   purple: { light: '#e8d5f0', dark: '#6a4c93', label: 'Purple' },
-  '3d-wood':   { light: '#d8b98a', dark: '#7a4a1e', label: '3D Wood' },
-  '3d-marble': { light: '#dcdcdc', dark: '#4a4a4a', label: '3D Marble' },
-  '3d-dark':   { light: '#5a6a7a', dark: '#1a2530', label: '3D Dark' }
+
+  /* -------- 3D themes -------- */
+  '3d-classic': { light: '#f0d9b5', dark: '#b58863', label: '3D Classic' },
+  '3d-blue':    { light: '#dee3e6', dark: '#4a75a0', label: '3D Blue' },
+  '3d-green':   { light: '#eeeed2', dark: '#769656', label: '3D Green' },
+  '3d-wood':    { light: '#d8b98a', dark: '#7a4a1e', label: '3D Wood' },
+  '3d-marble':  { light: '#dcdcdc', dark: '#4a4a4a', label: '3D Marble' },
+  '3d-dark':    { light: '#5a6a7a', dark: '#1a2530', label: '3D Dark' }
 };
 
 /* ============================================================
