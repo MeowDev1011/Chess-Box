@@ -1,4 +1,3 @@
-
 // js/state.js
 // ============================================================
 // ChessBox — shared mutable state
@@ -23,7 +22,7 @@ export const state = {
 
   /* ---------- Visual preferences ---------- */
   boardOrientation: 'auto',    // 'auto' | 'white' | 'black'
-  currentBoardColor: 'blue',   // Key of BOARD_THEMES
+  currentBoardColor: 'brown',  // Key of BOARD_THEMES — classic white/brown by default
   currentPieceSet: 'cburnett', // Key of PIECE_SETS
   selectedLevel: '',           // '' | 'easiest' | 'easier' | 'normal' | 'harder' | 'hardest'
   isExpanded: false,           // Board expanded state
