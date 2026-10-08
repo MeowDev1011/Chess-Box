@@ -13,7 +13,15 @@
 export const PIECE_SETS_3D = {
   '3d-staunty':  'https://lichess1.org/assets/piece/staunty/',
   '3d-cburnett': 'https://lichess1.org/assets/piece/cburnett/',
-  '3d-merida':   'https://lichess1.org/assets/piece/merida/'
+  '3d-merida':   'https://lichess1.org/assets/piece/merida/',
+  '3d-horsey':   'https://lichess1.org/assets/piece/horsey/',
+  '3d-alpha':    'https://lichess1.org/assets/piece/alpha/',
+  '3d-chessnut': 'https://lichess1.org/assets/piece/chessnut/',
+  '3d-fantasy':  'https://lichess1.org/assets/piece/fantasy/',
+  '3d-spatial':  'https://lichess1.org/assets/piece/spatial/',
+  '3d-chess7':   'https://lichess1.org/assets/piece/chess7/',
+  '3d-leipzig':  'https://lichess1.org/assets/piece/leipzig/',
+  '3d-celtic':   'https://lichess1.org/assets/piece/celtic/'
 };
 
 // The 3D sets use the exact same 12 piece codes as the 2D sets.
