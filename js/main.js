@@ -12,7 +12,8 @@ import {
   applyPieceSet,
   set3D,
   setExpanded,
-  handleResize
+  handleResize,
+  initBoard
 } from './board.js';
 import { loadPuzzle, ratingToDifficulty } from './puzzle.js';
 import {
@@ -127,6 +128,7 @@ function applyUrlParams() {
   if (p.bg) {
     if (p.bg === 'transparent') {
       document.documentElement.style.setProperty('--widget-bg', 'transparent');
+      $('sel-widget-bg').value = 'transparent';
     } else if (p.bg === 'black') {
       document.documentElement.style.setProperty('--widget-bg', '#000000');
       $('sel-widget-bg').value = 'black';
@@ -215,13 +217,14 @@ function wireResize() {
    BOOT
    ============================================================ */
 function boot() {
-  /* 1. Apply default visual state */
+  /* 1. Apply default visual state: cburnett + blue board + white background */
+  document.documentElement.style.setProperty('--widget-bg', '#ffffff');
   applyBoardTheme('blue');
-  applyPieceSet('horsey');
-  updatePiecePreview('horsey');
+  applyPieceSet('cburnett');
+  updatePiecePreview('cburnett');
   updateBoardPreview();
 
-  /* 2. Populate dynamic selects (piece sets, language) */
+  /* 2. Populate dynamic selects (piece sets, level menu) */
   buildPieceSetOptions();
   buildLevelMenu();
 
@@ -236,10 +239,17 @@ function boot() {
   /* 5. Translate the interface */
   applyTranslations();
 
-  /* 6. Load the first puzzle */
+  /* 6. Show a board with the standard starting position IMMEDIATELY,
+        before the puzzle is fetched. If the API is slow or fails,
+        the user still sees a proper board with pieces. */
+  initBoard(
+    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    () => {} // no-op until the real puzzle arrives
+  );
+
+  /* 7. Load the first puzzle */
   const initialDifficulty =
     urlParams.difficulty ||
-    (urlParams.easiest ? 'easiest' : '') ||
     state.selectedLevel ||
     '';
 
