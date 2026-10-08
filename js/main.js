@@ -124,22 +124,17 @@ function applyUrlParams() {
     }
   }
 
-  /* Widget background */
+  /* Widget background — only controllable via URL parameter */
   if (p.bg) {
     if (p.bg === 'transparent') {
       document.documentElement.style.setProperty('--widget-bg', 'transparent');
-      $('sel-widget-bg').value = 'transparent';
     } else if (p.bg === 'black') {
       document.documentElement.style.setProperty('--widget-bg', '#000000');
-      $('sel-widget-bg').value = 'black';
     } else if (p.bg === 'white') {
       document.documentElement.style.setProperty('--widget-bg', '#ffffff');
-      $('sel-widget-bg').value = 'white';
     } else if (isHex(p.bg)) {
       const hex = normHex(p.bg);
       document.documentElement.style.setProperty('--widget-bg', hex);
-      $('sel-widget-bg').value = 'custom';
-      $('inp-bg-color').value = hex;
     }
   }
 
@@ -214,12 +209,27 @@ function wireResize() {
 }
 
 /* ============================================================
+   FORCE BOARD REDRAW
+   Sometimes Chessground needs a couple of redraws to detect
+   the container size (especially the first paint after the
+   CSS transition finishes). This fires a few redraws.
+   ============================================================ */
+function forceRedraws() {
+  [50, 200, 600, 1200].forEach((delay) => {
+    setTimeout(() => {
+      if (state.cg) state.cg.redrawAll();
+    }, delay);
+  });
+}
+
+/* ============================================================
    BOOT
    ============================================================ */
 function boot() {
-  /* 1. Apply default visual state: cburnett + blue board + white background */
+  /* 1. Defaults: brown board (classic white/brown), cburnett pieces,
+        white background */
   document.documentElement.style.setProperty('--widget-bg', '#ffffff');
-  applyBoardTheme('blue');
+  applyBoardTheme('brown');
   applyPieceSet('cburnett');
   updatePiecePreview('cburnett');
   updateBoardPreview();
@@ -247,7 +257,10 @@ function boot() {
     () => {} // no-op until the real puzzle arrives
   );
 
-  /* 7. Load the first puzzle */
+  /* 7. Force a few redraws so Chessground syncs with the container */
+  forceRedraws();
+
+  /* 8. Load the first puzzle */
   const initialDifficulty =
     urlParams.difficulty ||
     state.selectedLevel ||
