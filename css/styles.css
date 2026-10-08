@@ -5,10 +5,11 @@
 
 /* ============================================================
    VARIABLES
+   Classic white/brown board by default.
    ============================================================ */
 :root {
-  --board-light: #dee3e6;
-  --board-dark:  #4a75a0;
+  --board-light: #f0d9b5;
+  --board-dark:  #b58863;
   --coord-size: 11px;
   --widget-bg: #ffffff;
   --board-max: 440px;
@@ -52,13 +53,18 @@ html, body {
 
 /* ============================================================
    BOARD
+   Chessground needs the container to have a square aspect.
+   We use width:100% + aspect-ratio:1, plus a min-height so
+   Chessground has something to measure on the first paint.
    ============================================================ */
 .puzzle-widget .cg-wrap {
   width: 100% !important;
   aspect-ratio: 1 / 1;
   height: auto !important;
+  min-height: 200px;      /* avoids a 0-height first paint */
   position: relative;
   background: transparent !important;
+  contain: layout size;   /* keeps Chessground from recalculating externally */
 }
 .puzzle-widget .cg-wrap cg-board,
 .puzzle-widget .cg-wrap .cg-board {
@@ -143,7 +149,6 @@ html, body {
   padding: 3px 8px;
   border-radius: 4px;
   pointer-events: none;
-  backdrop-filter: blur(4px);
   max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -166,7 +171,6 @@ html, body {
   display: none;
   align-items: center;
   gap: 6px;
-  backdrop-filter: blur(4px);
   pointer-events: none;
 }
 #turn-indicator.visible { display: flex; }
@@ -193,7 +197,6 @@ html, body {
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
-  backdrop-filter: blur(6px);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
   pointer-events: none;
 }
@@ -228,7 +231,6 @@ html, body {
   display: none;
   align-items: flex-start;
   gap: 14px;
-  backdrop-filter: blur(8px);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.15);
   min-width: 240px;
@@ -301,7 +303,7 @@ html, body {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-#btn-expand.active { background: rgba(74, 117, 160, 0.5); }
+#btn-expand.active { background: rgba(181, 136, 99, 0.5); }
 
 /* ============================================================
    MOVE HISTORY
@@ -376,7 +378,7 @@ html, body {
   flex: 1;
   height: 36px;
   padding: 0 16px;
-  background: #4a75a0;
+  background: #b58863;
   border: none;
   border-radius: 6px;
   color: #fff;
@@ -385,7 +387,7 @@ html, body {
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.puzzle-selector .row button:hover { background: #3b5f83; }
+.puzzle-selector .row button:hover { background: #9a6f4f; }
 .puzzle-selector .hint-text {
   color: #777;
   font-size: 11px;
@@ -498,17 +500,17 @@ html, body {
   font-size: 13px;
 }
 .level-dropdown .option:hover { background: rgba(0, 0, 0, 0.06); }
-.level-dropdown .option.selected { background: rgba(74, 117, 160, 0.2); color: #000; }
+.level-dropdown .option.selected { background: rgba(181, 136, 99, 0.2); color: #000; }
 .level-dropdown .option .level-name  { font-weight: 600; }
 .level-dropdown .option .level-range {
   margin-left: auto;
-  color: #4a75a0;
+  color: #b58863;
   font-size: 11px;
   font-family: ui-monospace, monospace;
 }
 .level-icon { width: 22px; height: 22px; flex-shrink: 0; display: block; }
 .level-icon rect { fill: rgba(0, 0, 0, 0.15); }
-.level-icon rect.on { fill: #4a75a0; }
+.level-icon rect.on { fill: #b58863; }
 
 /* ============================================================
    MODAL
@@ -543,7 +545,7 @@ html, body {
 .cb-modal h3 {
   font-size: 16px;
   margin-bottom: 10px;
-  color: #4a75a0;
+  color: #b58863;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -561,7 +563,7 @@ html, body {
   padding: 2px 6px;
   border-radius: 4px;
   font-family: ui-monospace, monospace;
-  color: #4a75a0;
+  color: #b58863;
   word-break: break-all;
 }
 .cb-modal .cb-modal-body .info-row {
@@ -598,7 +600,7 @@ html, body {
   transition: opacity 0.15s ease;
 }
 .cb-modal .cb-modal-actions button:hover { opacity: 0.85; }
-.cb-modal .btn-primary   { background: #4a75a0; color: #fff; }
+.cb-modal .btn-primary   { background: #b58863; color: #fff; }
 .cb-modal .btn-secondary { background: rgba(0, 0, 0, 0.08); color: #333; }
 
 /* ============================================================
