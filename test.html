@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChessBox — Diagnóstico</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: ui-monospace, Menlo, monospace;
+      background: #0d1117;
+      color: #e6edf3;
+      padding: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    h1 { font-size: 18px; margin-bottom: 8px; color: #7ec8e3; }
+    h2 { font-size: 14px; margin: 16px 0 8px; color: #7ec8e3; }
+    #summary {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-weight: 700;
+      text-align: center;
+    }
+    #summary.ok   { background: rgba(34, 139, 34, 0.25); color: #6f6; border: 1px solid #6f6; }
+    #summary.fail { background: rgba(178, 34, 34, 0.25); color: #f66; border: 1px solid #f66; }
+    #summary.wait { background: rgba(74, 117, 160, 0.25); color: #7ec8e3; border: 1px solid #7ec8e3; }
+
+    .line {
+      padding: 6px 10px;
+      margin: 4px 0;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      word-break: break-word;
+    }
+    .ok   { color: #6f6; }
+    .fail { color: #f66; }
+    .warn { color: #f5a623; }
+    .dim  { color: #8b949e; font-size: 12px; }
+
+    button {
+      background: #4a75a0;
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+      margin-right: 8px;
+    }
+    button:active { transform: scale(0.96); }
+
+    #board-test {
+      width: 320px;
+      height: 320px;
+      margin: 12px auto;
+      background: #f0f0f0;
+      border-radius: 8px;
+      display: none;
+    }
+    #board-test.visible { display: block; }
+
+    details { margin: 8px 0; }
+    summary { cursor: pointer; color: #7ec8e3; font-weight: 600; }
+    pre {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 8px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 11px;
+      margin-top: 6px;
+      color: #d0d0d0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>♟️ ChessBox — Diagnóstico</h1>
+  <p class="dim">Versión de prueba. Espera unos segundos mientras se ejecutan todos los tests.</p>
+
+  <div id="summary" class="wait">⏳ Ejecutando tests…</div>
+
+  <div id="output"></div>
+
+  <button id="btn-copy">📋 Copiar todo</button>
+  <button id="btn-retry">🔄 Reintentar</button>
+
+  <script>
+    /* ============================================================
+       Captura global de errores ANTES de todo lo demás
+       ============================================================ */
+    const capturedErrors = [];
+
+    window.addEventListener('error', (e) => {
+      capturedErrors.push({
+        type: 'error',
+        message: e.message,
+        file: e.filename,
+        line: e.lineno,
+        col: e.colno
+      });
+    });
+
+    window.addEventListener('unhandledrejection', (e) => {
+      capturedErrors.push({
+        type: 'unhandledrejection',
+        message: e.reason?.message || String(e.reason),
+        stack: e.reason?.stack || ''
+      });
+    });
+
+    const output = document.getElementById('output');
+    const summary = document.getElementById('summary');
+    let totalTests = 0;
+    let failedTests = 0;
+
+    function log(name, ok, detail = '') {
+      totalTests++;
+      if (!ok) failedTests++;
+      const d = document.createElement('div');
+      d.className = 'line ' + (ok ? 'ok' : 'fail');
+      d.innerHTML = (ok ? '✅ ' : '❌ ') + '<strong>' + name + '</strong>' +
+        (detail ? '<br><span class="dim">' + detail + '</span>' : '');
+      output.appendChild(d);
+    }
+
+    function logWarn(name, detail = '') {
+      const d = document.createElement('div');
+      d.className = 'line warn';
+      d.innerHTML = '⚠️ ' + name +
+        (detail ? '<br><span class="dim">' + detail + '</span>' : '');
+      output.appendChild(d);
+    }
+
+    function section(title) {
+      const h = document.createElement('h2');
+      h.textContent = title;
+      output.appendChild(h);
+    }
+
+    /* ============================================================
+       ENVIRONMENT
+       ============================================================ */
+    section('1. Entorno');
+
+    const env = {
+      url: location.href,
+      origin: location.origin,
+      protocol: location.protocol,
+      userAgent: navigator.userAgent,
+      isSecureContext: window.isSecureContext,
+      hasModules: 'noModule' in HTMLScriptElement.prototype,
+      hasFetch: typeof fetch === 'function',
+      hasLocalStorage: (() => { try { localStorage.setItem('t','1'); localStorage.removeItem('t'); return true; } catch { return false; } })(),
+      hasClipboard: !!navigator.clipboard
+    };
+
+    log('Protocolo HTTPS', location.protocol === 'https:', env.protocol);
+    log('Módulos ES soportados', env.hasModules);
+    log('Fetch API', env.hasFetch);
+    log('localStorage', env.hasLocalStorage);
+    log('Clipboard API', env.hasClipboard);
+
+    /* ============================================================
+       FICHEROS LOCALES
+       ============================================================ */
+    section('2. Archivos locales');
+
+    const filesToTest = [
+      'index.html',
+      'css/styles.css',
+      'js/main.js',
+      'js/state.js',
+      'js/config.js',
+      'js/i18n.js',
+      'js/audio.js',
+      'js/storage.js',
+      'js/modal.js',
+      'js/ui.js',
+      'js/board.js',
+      'js/puzzle.js',
+      'js/controls.js',
+      'assets/pieces_2d.js',
+      'assets/pieces_3d.js'
+    ];
+
+    async function testFiles() {
+      for (const f of filesToTest) {
+        try {
+          const r = await fetch(f + '?t=' + Date.now(), { method: 'GET' });
+          log(f, r.ok, r.ok ? '' : 'HTTP ' + r.status);
+        } catch (e) {
+          log(f, false, e.message);
+        }
+      }
+    }
+
+    /* ============================================================
+       MÓDULOS
+       ============================================================ */
+    section('3. Importación de módulos');
+
+    async function testImports() {
+      const modules = [
+        './js/state.js',
+        './js/config.js',
+        './js/i18n.js',
+        './js/audio.js',
+        './js/storage.js',
+        './js/modal.js',
+        './js/ui.js',
+        './js/board.js',
+        './js/puzzle.js',
+        './js/controls.js'
+      ];
+
+      for (const m of modules) {
+        try {
+          const mod = await import(m + '?t=' + Date.now());
+          const exported = Object.keys(mod).length;
+          log(m, true, exported + ' exportaciones');
+        } catch (e) {
+          log(m, false, e.message);
+        }
+      }
+    }
+
+    /* ============================================================
+       CDNs
+       ============================================================ */
+    section('4. Librerías externas (CDN)');
+
+    async function testCDNs() {
+      try {
+        const cg = await import('https://esm.sh/@lichess-org/chessground@10.1.1');
+        log('chessground (esm.sh)', true, Object.keys(cg).join(', '));
+      } catch (e) {
+        log('chessground (esm.sh)', false, e.message);
+      }
+
+      try {
+        const cj = await import('https://esm.sh/chess.js@1.4.0');
+        log('chess.js (esm.sh)', true, Object.keys(cj).join(', '));
+      } catch (e) {
+        log('chess.js (esm.sh)', false, e.message);
+      }
+
+      try {
+        const r = await fetch('https://cdn.jsdelivr.net/npm/@lichess-org/chessground@10.1.1/assets/chessground.base.min.css', { method: 'HEAD' });
+        log('chessground CSS (jsdelivr)', r.ok, r.ok ? '' : 'HTTP ' + r.status);
+      } catch (e) {
+        log('chessground CSS (jsdelivr)', false, e.message);
+      }
+
+      try {
+        const r = await fetch('https://lichess1.org/assets/piece/cburnett/wN.svg', { method: 'HEAD' });
+        log('Lichess piece SVG', r.ok, r.ok ? '' : 'HTTP ' + r.status);
+      } catch (e) {
+        log('Lichess piece SVG', false, e.message);
+      }
+    }
+
+    /* ============================================================
+       CHESS.JS FUNCIONAL
+       ============================================================ */
+    section('5. chess.js funciona');
+
+    async function testChessJs() {
+      try {
+        const { Chess } = await import('https://esm.sh/chess.js@1.4.0');
+        const g = new Chess();
+        const fen = g.fen();
+        log('Crear partida', true, fen);
+        const moves = g.moves();
+        log('Listar movimientos', moves.length === 20, moves.length + ' movimientos');
+        g.move('e4');
+        log('Jugar e4', g.fen().includes('4P3'), g.fen());
+      } catch (e) {
+        log('chess.js error', false, e.message);
+      }
+    }
+
+    /* ============================================================
+       CHESSGROUND FUNCIONAL
+       ============================================================ */
+    section('6. Chessground dibuja un tablero');
+
+    async function testChessground() {
+      const board = document.getElementById('board-test');
+      board.classList.add('visible');
+
+      try {
+        const { Chessground } = await import('https://esm.sh/@lichess-org/chessground@10.1.1');
+        const cg = Chessground(board, {
+          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+        });
+        // Esperar a que se renderice
+        await new Promise(r => setTimeout(r, 800));
+        const pieces = board.querySelectorAll('piece');
+        const cgBoard = board.querySelector('cg-board');
+        log('Instancia creada', !!cg);
+        log('cg-board presente', !!cgBoard);
+        log('Piezas dibujadas', pieces.length > 0, pieces.length + ' piezas');
+      } catch (e) {
+        log('Chessground error', false, e.message);
+      }
+    }
+
+    /* ============================================================
+       API DE LICHESS
+       ============================================================ */
+    section('7. API de Lichess');
+
+    async function testLichess() {
+      try {
+        const r = await fetch('https://lichess.org/api/puzzle/next', {
+          headers: { Accept: 'application/json' }
+        });
+        if (r.ok) {
+          const data = await r.json();
+          log('Fetch puzzle', true, 'Tema: ' + (data.puzzle?.themes || []).join(', '));
+        } else {
+          log('Fetch puzzle', false, 'HTTP ' + r.status);
+        }
+      } catch (e) {
+        log('Fetch puzzle', false, e.message);
+      }
+    }
+
+    /* ============================================================
+       SECUENCIA PRINCIPAL
+       ============================================================ */
+    async function runAll() {
+      output.innerHTML = '';
+      totalTests = 0;
+      failedTests = 0;
+      summary.className = 'wait';
+      summary.textContent = '⏳ Ejecutando tests…';
+
+      await testFiles();
+      await testImports();
+      await testCDNs();
+      await testChessJs();
+      await testChessground();
+      await testLichess();
+
+      /* Resumen final */
+      const ok = failedTests === 0;
+      summary.className = ok ? 'ok' : 'fail';
+      summary.textContent = ok
+        ? '✅ Todos los tests pasaron (' + totalTests + ')'
+        : '❌ ' + failedTests + ' de ' + totalTests + ' tests fallaron';
+
+      /* Errores globales capturados */
+      if (capturedErrors.length > 0) {
+        section('8. Errores globales capturados');
+        capturedErrors.forEach((e, i) => {
+          const d = document.createElement('div');
+          d.className = 'line fail';
+          d.innerHTML = '❌ <strong>Error ' + (i + 1) + '</strong><br>' +
+            '<span class="dim">' + e.message + '</span>' +
+            (e.file ? '<br><span class="dim">' + e.file + ':' + e.line + ':' + e.col + '</span>' : '');
+          output.appendChild(d);
+        });
+      }
+    }
+
+    /* Botón copiar */
+    document.getElementById('btn-copy').addEventListener('click', async () => {
+      const text = output.innerText;
+      try {
+        await navigator.clipboard.writeText(text);
+        alert('✅ Copiado al portapapeles');
+      } catch {
+        // Fallback: seleccionar todo el texto
+        const range = document.createRange();
+        range.selectNodeContents(output);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        alert('Selecciona y copia manualmente');
+      }
+    });
+
+    /* Botón reintentar */
+    document.getElementById('btn-retry').addEventListener('click', () => {
+      location.reload();
+    });
+
+    /* Ejecutar */
+    runAll();
+  </script>
+
+</body>
+</html>
