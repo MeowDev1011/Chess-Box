@@ -3,6 +3,9 @@
 // ChessBox — Chessground wrapper
 // Everything that touches the board itself: initialization,
 // theme, piece set, orientation, 3D toggle, resize.
+//
+// Uses a ResizeObserver to keep Chessground in sync with the
+// container size (fixes the "broken board" bug on mobile).
 // ============================================================
 
 import { Chessground } from 'https://esm.sh/@lichess-org/chessground@10.1.1';
@@ -13,13 +16,45 @@ import { updateBoardPreview } from './ui.js';
 const $ = (id) => document.getElementById(id);
 
 /* ============================================================
+   RESIZE OBSERVER
+   Watches the board container and calls redrawAll() whenever
+   it changes size. This is what keeps the squares aligned on
+   mobile when the address bar hides/shows, when the keyboard
+   opens, or when the orientation changes.
+   ============================================================ */
+let resizeObserver = null;
+let resizeRaf = null;
+
+function setupResizeObserver() {
+  /* Tear down any previous observer */
+  if (resizeObserver) {
+    try { resizeObserver.disconnect(); } catch (e) {}
+    resizeObserver = null;
+  }
+
+  const board = $('board');
+  if (!board || typeof ResizeObserver === 'undefined') return;
+
+  resizeObserver = new ResizeObserver(() => {
+    /* Debounce via requestAnimationFrame so we only redraw once
+       per frame even if the observer fires multiple times. */
+    if (resizeRaf) cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(() => {
+      if (state.cg) state.cg.redrawAll();
+    });
+  });
+
+  resizeObserver.observe(board);
+}
+
+/* ============================================================
    BOARD THEME
    Applies light/dark colors via CSS variables, updates the 2x2
    preview, and toggles 3D mode if the theme key starts with "3d-".
    ============================================================ */
 export function applyBoardTheme(name) {
   if (name === 'custom') return;
-  const th = BOARD_THEMES[name] || BOARD_THEMES.blue;
+  const th = BOARD_THEMES[name] || BOARD_THEMES.brown;
   document.documentElement.style.setProperty('--board-light', th.light);
   document.documentElement.style.setProperty('--board-dark',  th.dark);
   state.currentBoardColor = name;
@@ -34,7 +69,7 @@ export function applyBoardTheme(name) {
    of the selected set.
    ============================================================ */
 export function applyPieceSet(setName) {
-  const base = PIECE_SETS[setName] || PIECE_SETS.horsey;
+  const base = PIECE_SETS[setName] || PIECE_SETS.cburnett;
   state.currentPieceSet = setName;
 
   const pieces = [
@@ -99,9 +134,18 @@ export function applyOrientation() {
    `onMove` is the callback that fires after a user drag.
    ============================================================ */
 export function initBoard(fen, onMove) {
-  if (state.cg) state.cg.destroy();
+  if (state.cg) {
+    try { state.cg.destroy(); } catch (e) {}
+    state.cg = null;
+  }
 
-  state.cg = Chessground($('board'), {
+  const board = $('board');
+  if (!board) {
+    console.warn('Board container not found.');
+    return;
+  }
+
+  state.cg = Chessground(board, {
     fen: fen,
     orientation: computeOrientation(),
     turnColor: 'white',
@@ -128,6 +172,17 @@ export function initBoard(fen, onMove) {
 
   /* Re-apply the current piece set after the board is rebuilt */
   applyPieceSet(state.currentPieceSet);
+
+  /* Attach the ResizeObserver to keep the board in sync */
+  setupResizeObserver();
+
+  /* Force an immediate redraw to work around first-paint sizing
+     issues on Android Chrome (address bar / viewport changes). */
+  requestAnimationFrame(() => {
+    if (state.cg) state.cg.redrawAll();
+    /* And another one after the CSS transitions settle */
+    setTimeout(() => { if (state.cg) state.cg.redrawAll(); }, 300);
+  });
 }
 
 /* ============================================================
