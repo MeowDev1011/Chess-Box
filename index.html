@@ -147,9 +147,9 @@
         <div class="board-preview" id="board-preview"></div>
         <select id="sel-board-color" style="flex:1;">
           <optgroup label="2D">
+            <option value="brown">Brown (Classic)</option>
             <option value="blue">Blue (Lichess)</option>
             <option value="green">Green</option>
-            <option value="brown">Brown</option>
             <option value="gray">Gray</option>
             <option value="dark">Dark</option>
             <option value="light">Light</option>
@@ -161,15 +161,18 @@
             <option value="3d-wood">3D Wood</option>
             <option value="3d-marble">3D Marble</option>
             <option value="3d-dark">3D Dark</option>
+            <option value="3d-classic">3D Classic</option>
+            <option value="3d-blue">3D Blue</option>
+            <option value="3d-green">3D Green</option>
           </optgroup>
           <option value="custom" data-i18n="custom"></option>
         </select>
       </div>
       <div id="custom-colors" class="custom-color-row" style="display:none;">
-        <input type="color" id="inp-custom-light" value="#dee3e6" />
-        <input type="text" id="inp-custom-light-hex" placeholder="#dee3e6" maxlength="7" />
-        <input type="color" id="inp-custom-dark" value="#4a75a0" />
-        <input type="text" id="inp-custom-dark-hex" placeholder="#4a75a0" maxlength="7" />
+        <input type="color" id="inp-custom-light" value="#f0d9b5" />
+        <input type="text" id="inp-custom-light-hex" placeholder="#f0d9b5" maxlength="7" />
+        <input type="color" id="inp-custom-dark" value="#b58863" />
+        <input type="text" id="inp-custom-dark-hex" placeholder="#b58863" maxlength="7" />
       </div>
 
       <!-- Piece set (populated by JS) -->
@@ -179,19 +182,6 @@
           <img id="piece-preview-img" src="https://lichess1.org/assets/piece/cburnett/wN.svg" alt="" />
         </div>
         <select id="sel-piece-set" style="flex:1;"></select>
-      </div>
-
-      <!-- Widget background -->
-      <label for="sel-widget-bg" data-i18n="widget_bg"></label>
-      <div class="row">
-        <select id="sel-widget-bg" style="flex:1;">
-          <option value="white" data-i18n="bg_white"></option>
-          <option value="transparent" data-i18n="bg_transparent"></option>
-          <option value="black" data-i18n="bg_black"></option>
-          <option value="custom" data-i18n="custom"></option>
-        </select>
-        <input type="color" id="inp-bg-color" value="#1a1a2e"
-               style="width:40px;height:32px;border:1px solid rgba(255,255,255,0.2);border-radius:6px;background:transparent;cursor:pointer;padding:2px;" />
       </div>
 
       <!-- Orientation -->
